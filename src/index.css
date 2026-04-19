@@ -1,13 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #020617;
+    --card: #ffffff;
+    --card-foreground: #020617;
+    --primary: #f27d26;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #64748b;
+    --accent: #fff7ed;
+    --border: #e2e8f0;
+    --input: #f1f5f9;
+  }
+
+  [data-theme='dark'] {
+    --background: #020203;
+    --foreground: #f8fafc;
+    --card: #0c0d10;
+    --card-foreground: #f8fafc;
+    --primary: #f27d26;
+    --primary-foreground: #ffffff;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #1c1917;
+    --border: #1e293b;
+    --input: #0c0d10;
+  }
+
+  [data-theme='brown'] {
+    --background: #1c1917;
+    --foreground: #fafaf9;
+    --card: #292524;
+    --card-foreground: #fafaf9;
+    --primary: #f27d26;
+    --primary-foreground: #ffffff;
+    --secondary: #44403c;
+    --secondary-foreground: #fafaf9;
+    --muted: #a8a29e;
+    --accent: #44403c;
+    --border: #44403c;
+    --input: #292524;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -17,10 +65,11 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+    background: var(--border);
+    @apply rounded-full hover:opacity-80 transition-colors;
   }
 }

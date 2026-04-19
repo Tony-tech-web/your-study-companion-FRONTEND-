@@ -6,121 +6,122 @@ import { cn } from '../lib/utils';
 
 export const Leaderboard = () => {
   return (
-    <div className="flex-1 p-8 bg-slate-50 text-slate-900 flex flex-col overflow-y-auto">
-      <header className="mb-10">
-        <h1 className="text-4xl font-bold text-slate-900 leading-tight tracking-tight">Academic Leaderboard</h1>
-        <div className="mt-6 flex gap-2">
-            <Badge className="bg-blue-600 text-white shadow-md shadow-blue-100 py-2.5 px-8 normal-case text-sm font-bold border-none transition-all">Global Ranking</Badge>
-            <Badge className="bg-white text-slate-500 py-2.5 px-8 normal-case text-sm font-bold border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">Class Ranking</Badge>
+    <div className="flex-1 p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] flex flex-col overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
+      <header className="mb-12 shrink-0">
+        <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Global Ranking</h1>
+        <p className="text-[var(--muted)] text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-[var(--primary)] font-black">Online_Cluster_7</span></p>
+        <div className="mt-8 flex gap-3 overflow-x-auto scrollbar-hide">
+            <Badge className="bg-[var(--primary)] text-white shadow-xl shadow-[var(--primary)]/20 py-3 px-8 uppercase text-[10px] font-black tracking-[0.2em] border-none transition-all rounded-xl">Global Sync</Badge>
+            <Badge className="bg-[var(--card)] text-[var(--muted)] py-3 px-8 uppercase text-[10px] font-black tracking-[0.2em] border border-[var(--border)] hover:border-[var(--primary)] cursor-pointer transition-all rounded-xl">Cluster Local</Badge>
         </div>
       </header>
 
       {/* Podium */}
-      <div className="grid grid-cols-12 gap-6 mb-12 items-end px-4">
+      <div className="flex flex-col lg:flex-row gap-8 mb-12 items-end px-4 shrink-0">
         {/* 2nd Place */}
-        <div className="col-span-4 translate-y-4">
-           <Card className="bg-white border-slate-100 p-8 flex flex-col items-center shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-200" />
-              <span className="text-4xl font-black text-slate-200 absolute top-6 right-6 italic">2nd</span>
-              <img src={mockLeaderboard[1].avatar} className="w-20 h-20 rounded-2xl mb-4 border-4 border-slate-50 shadow-md group-hover:scale-105 transition-transform" />
-              <h3 className="text-xl font-bold text-slate-800">{mockLeaderboard[1].name}</h3>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Level {mockLeaderboard[1].level} • {mockLeaderboard[1].xp.toLocaleString()} XP</p>
-              <div className="mt-4 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
-                <span className="text-xs font-black text-emerald-600">+{mockLeaderboard[1].weeklyGain} XP</span>
+        <div className="w-full lg:flex-1 lg:order-1">
+           <Card className="bg-[var(--card)] border-[var(--border)] p-8 flex flex-col items-center shadow-lg relative overflow-hidden group hover:border-[var(--primary)]/50 transition-all rounded-[2rem]">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-400 opacity-20" />
+              <span className="text-5xl font-black text-[var(--muted)] absolute top-6 right-8 italic opacity-10">02</span>
+              <img src={mockLeaderboard[1].avatar} className="w-20 h-20 rounded-[1.5rem] mb-6 border-4 border-[var(--border)] shadow-md group-hover:scale-110 transition-transform referrer-policy-no-referrer" />
+              <h3 className="text-xl font-black uppercase tracking-tight text-[var(--foreground)]">{mockLeaderboard[1].name}</h3>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-widest mt-2 opacity-60">NODE LVL {mockLeaderboard[1].level} • {mockLeaderboard[1].xp.toLocaleString()} XP</p>
+              <div className="mt-6 px-5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+{mockLeaderboard[1].weeklyGain} XP WAVE</span>
               </div>
            </Card>
         </div>
 
         {/* 1st Place */}
-        <div className="col-span-4 z-10">
-            <Card className="bg-white border-blue-100 p-10 flex flex-col items-center shadow-2xl relative overflow-hidden group scale-105">
-              <div className="absolute top-0 left-0 w-full h-2 bg-blue-600" />
-              <span className="text-5xl font-black text-blue-50 absolute top-8 right-8 italic drop-shadow-sm">1st</span>
-              <div className="relative mb-4">
-                  <img src={mockLeaderboard[0].avatar} className="w-24 h-24 rounded-3xl border-4 border-blue-50 shadow-xl group-hover:scale-105 transition-transform" />
-                  <Trophy className="absolute -top-6 -left-6 w-12 h-12 text-blue-600 drop-shadow-md rotate-12" />
+        <div className="w-full lg:flex-1 lg:order-2 z-10 lg:-translate-y-8">
+            <Card className="bg-[var(--card)] border-[var(--primary)] p-10 flex flex-col items-center shadow-[0_30px_60px_-15px_rgba(242,125,38,0.3)] relative overflow-hidden group animate-pulse-slow rounded-[2.5rem]">
+              <div className="absolute top-0 left-0 w-full h-2 bg-[var(--primary)]" />
+              <span className="text-6xl font-black text-[var(--primary)] absolute top-8 right-10 italic opacity-20">01</span>
+              <div className="relative mb-6">
+                  <img src={mockLeaderboard[0].avatar} className="w-28 h-28 rounded-[2rem] border-4 border-[var(--primary)] shadow-2xl group-hover:scale-110 transition-transform referrer-policy-no-referrer" />
+                  <Trophy className="absolute -top-8 -left-8 w-14 h-14 text-[var(--primary)] drop-shadow-[0_0_15px_var(--primary)] rotate-12" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900">{mockLeaderboard[0].name}</h3>
-              <p className="text-xs text-blue-600 font-black uppercase tracking-widest mt-1">Level {mockLeaderboard[0].level} • {mockLeaderboard[0].xp.toLocaleString()} XP</p>
-              <div className="mt-5 px-6 py-2 rounded-full bg-blue-600 shadow-lg shadow-blue-200">
-                <span className="text-xs font-black text-white uppercase tracking-widest">🏆 Leader</span>
+              <h3 className="text-2xl font-black text-[var(--foreground)] uppercase tracking-tighter">{mockLeaderboard[0].name}</h3>
+              <p className="text-[11px] text-[var(--primary)] font-black uppercase tracking-[0.2em] mt-2">SUPREME NODE • {mockLeaderboard[0].xp.toLocaleString()} XP</p>
+              <div className="mt-8 px-8 py-3 rounded-2xl bg-[var(--primary)] shadow-2xl shadow-[var(--primary)]/40 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                <span className="text-xs font-black text-white uppercase tracking-[0.2em]">GLOBAL CHAMPION</span>
               </div>
             </Card>
         </div>
 
         {/* 3rd Place */}
-        <div className="col-span-4 translate-y-8">
-            <Card className="bg-white border-slate-100 p-8 flex flex-col items-center shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-200/50" />
-              <span className="text-4xl font-black text-slate-200 absolute top-6 right-6 italic">3rd</span>
-              <img src={mockLeaderboard[2].avatar} className="w-20 h-20 rounded-2xl mb-4 border-4 border-slate-50 shadow-md group-hover:scale-105 transition-transform" />
-              <h3 className="text-xl font-bold text-slate-800">{mockLeaderboard[2].name}</h3>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Level {mockLeaderboard[2].level} • {mockLeaderboard[2].xp.toLocaleString()} XP</p>
-              <div className="mt-4 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
-                <span className="text-xs font-black text-emerald-600">+{mockLeaderboard[2].weeklyGain} XP</span>
+        <div className="w-full lg:flex-1 lg:order-3">
+            <Card className="bg-[var(--card)] border-[var(--border)] p-8 flex flex-col items-center shadow-lg relative overflow-hidden group hover:border-[var(--primary)]/50 transition-all rounded-[2rem]">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-400 opacity-20" />
+              <span className="text-5xl font-black text-[var(--muted)] absolute top-6 right-8 italic opacity-10">03</span>
+              <img src={mockLeaderboard[2].avatar} className="w-20 h-20 rounded-[1.5rem] mb-6 border-4 border-[var(--border)] shadow-md group-hover:scale-110 transition-transform referrer-policy-no-referrer" />
+              <h3 className="text-xl font-black uppercase tracking-tight text-[var(--foreground)]">{mockLeaderboard[2].name}</h3>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-widest mt-2 opacity-60">NODE LVL {mockLeaderboard[2].level} • {mockLeaderboard[2].xp.toLocaleString()} XP</p>
+              <div className="mt-6 px-5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+{mockLeaderboard[2].weeklyGain} XP WAVE</span>
               </div>
            </Card>
         </div>
       </div>
 
-      <Card className="flex-1 overflow-hidden flex flex-col p-0 shadow-xl border-slate-100">
-        <div className="grid grid-cols-12 px-8 py-5 border-b border-slate-50 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] bg-slate-50/50">
-            <div className="col-span-1">Rank</div>
-            <div className="col-span-4">Student</div>
-            <div className="col-span-3">Level Progression</div>
-            <div className="col-span-2">Total XP</div>
-            <div className="col-span-2 text-right">Weekly Gain</div>
+      <Card className="flex-1 overflow-hidden flex flex-col p-0 shadow-2xl border-[var(--border)] rounded-[2.5rem] bg-[var(--card)]/50 backdrop-blur-sm">
+        <div className="grid grid-cols-12 px-10 py-6 border-b border-[var(--border)] text-[10px] uppercase font-black text-[var(--muted)] tracking-[0.3em] bg-[var(--accent)]/30 shrink-0">
+            <div className="col-span-1">Pos</div>
+            <div className="col-span-4 md:col-span-5">Identity Node</div>
+            <div className="col-span-3 hidden md:block text-center">Sync Progress</div>
+            <div className="col-span-4 md:col-span-3 text-right">Total XP Units</div>
         </div>
-        <div className="flex-1 overflow-y-auto space-y-2 p-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-1 p-6 custom-scrollbar pb-32">
             {mockLeaderboard.slice(3).map((student, i) => (
-                <div key={student.rank} className="grid grid-cols-12 items-center px-4 py-4 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all group">
-                    <div className="col-span-1 text-sm font-black text-slate-400 group-hover:text-blue-600 transition-colors">#{student.rank}</div>
-                    <div className="col-span-4 flex items-center gap-4">
-                        <img src={student.avatar} className="w-9 h-9 rounded-xl bg-slate-100 shadow-sm" />
-                        <span className="text-sm font-bold text-slate-800">{student.name}</span>
-                    </div>
-                    <div className="col-span-3 flex items-center gap-4">
-                        <span className="text-[10px] font-black text-slate-400 uppercase w-12 tracking-tighter">Lvl {student.level}</span>
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden max-w-[120px] shadow-inner">
-                            <div className="h-full bg-blue-600 rounded-full shadow-sm" style={{ width: '60%' }} />
+                <div key={student.rank} className="grid grid-cols-12 items-center px-6 py-5 rounded-2xl border border-transparent hover:border-[var(--primary)]/30 hover:bg-[var(--accent)]/30 transition-all group cursor-pointer relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-[var(--primary)] translate-x-full group-hover:translate-x-0 transition-transform" />
+                    <div className="col-span-1 text-sm font-black text-[var(--muted)] group-hover:text-[var(--primary)] transition-colors">#{student.rank}</div>
+                    <div className="col-span-11 md:col-span-8 grid grid-cols-12 items-center gap-4">
+                        <div className="col-span-12 md:col-span-6 flex items-center gap-5">
+                            <img src={student.avatar} className="w-11 h-11 rounded-xl bg-[var(--input)] border border-[var(--border)] shadow-inner group-hover:border-[var(--primary)] transition-all referrer-policy-no-referrer" />
+                            <span className="text-sm font-black text-[var(--foreground)] uppercase tracking-tight">{student.name}</span>
+                        </div>
+                        <div className="col-span-6 hidden md:flex items-center gap-5">
+                            <span className="text-[9px] font-black text-[var(--muted)] uppercase w-16 tracking-widest opacity-60">Lvl {student.level}</span>
+                            <div className="flex-1 h-2 bg-[var(--input)] rounded-full overflow-hidden shadow-inner border border-[var(--border)]">
+                                <div className="h-full bg-[var(--primary)] shadow-[0_0_10px_var(--primary)]" style={{ width: '65%' }} />
+                            </div>
                         </div>
                     </div>
-                    <div className="col-span-2 text-xs font-black text-slate-900">{student.xp.toLocaleString()} XP</div>
-                    <div className="col-span-2 flex items-center justify-end gap-2 text-xs font-black text-emerald-600">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                        +{student.weeklyGain}
-                    </div>
+                    <div className="col-span-4 md:col-span-3 text-right text-xs font-black text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">{student.xp.toLocaleString()}</div>
                 </div>
             ))}
         </div>
-        {/* Floating Rank Footer */}
-        <div className="bg-slate-900 p-5 flex items-center justify-between px-12 text-white rounded-b-2xl shadow-inner">
-            <div className="flex items-center gap-8">
+        
+        {/* Sticky Global Status Bar */}
+        <div className="bg-[var(--foreground)] text-[var(--background)] p-8 flex flex-col md:flex-row items-center justify-between px-12 z-20 shrink-0 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[var(--primary)]/5 animate-pulse" />
+            <div className="flex items-center gap-12 relative z-10 w-full md:w-auto mb-6 md:mb-0">
                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">My Current Position</span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                     <span className="text-xl font-black text-blue-400">#12</span>
-                     <span className="text-[10px] font-bold text-slate-400">Total contributors</span>
-                  </div>
-               </div>
-               <div className="w-px h-10 bg-slate-800/50" />
-               <div className="flex items-center gap-3">
-                  <img src={mockLeaderboard[0].avatar} className="w-9 h-9 rounded-xl border border-slate-700" />
-                  <div className="flex flex-col">
-                     <span className="text-sm font-black text-white leading-tight">Aman Sharma</span>
-                     <span className="text-[9px] font-bold text-slate-500 uppercase">Beta User</span>
+                  <span className="text-[9px] font-black text-[var(--background)] opacity-40 uppercase tracking-[0.3em]">User Position Index</span>
+                  <div className="flex items-center gap-3 mt-1">
+                     <span className="text-3xl font-black text-[var(--primary)] tracking-tighter">#12</span>
+                     <div className="w-1 h-10 bg-[var(--background)] opacity-10 rounded-full" />
+                     <div className="flex items-center gap-3">
+                        <img src="https://picsum.photos/seed/aman/100/100" className="w-11 h-11 rounded-xl border border-[var(--background)] opacity-90" referrerPolicy="no-referrer" />
+                        <div className="flex flex-col">
+                           <span className="text-sm font-black uppercase tracking-tight">Aman Sharma</span>
+                           <span className="text-[8px] font-black opacity-40 uppercase tracking-[0.2em]">Verified Alpha Tester</span>
+                        </div>
+                     </div>
                   </div>
                </div>
             </div>
-            <div className="flex items-center gap-16">
-               <div className="flex flex-col items-center">
-                  <span className="text-[9px] uppercase font-bold text-slate-500 tracking-widest">Current XP</span>
-                  <span className="text-sm font-black text-blue-400">15,420</span>
+            
+            <div className="flex items-center gap-12 relative z-10">
+               <div className="flex flex-col items-center md:items-end">
+                  <span className="text-[9px] uppercase font-black opacity-40 tracking-[0.3em]">Aggregate Units</span>
+                  <span className="text-xl font-black text-[var(--primary)]">15,420 XP</span>
                </div>
                <div className="flex flex-col items-end">
-                  <span className="text-[9px] uppercase font-bold text-slate-500 tracking-widest">Growth Factor</span>
-                  <div className="flex items-center gap-1 text-sm font-black text-emerald-400">
-                    +250 <ChevronUp className="w-4 h-4" />
+                  <span className="text-[9px] uppercase font-black opacity-40 tracking-[0.3em]">Growth Waveform</span>
+                  <div className="flex items-center gap-1 text-xl font-black text-emerald-400">
+                    <span className="tracking-tighter">+250</span> <ChevronUp className="w-5 h-5" />
                   </div>
                </div>
             </div>

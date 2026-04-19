@@ -4,7 +4,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
-import { Plus, MoreHorizontal } from 'lucide-react';
+import { Plus, MoreHorizontal, TrendingUp, Calculator, Bell } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 const gpaData = [
   { sem: 'Sem 1', gpa: 2.8, trend: 3.1 },
@@ -15,125 +16,174 @@ const gpaData = [
 
 export const GPA = () => {
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 text-slate-900">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Academic Progress</h1>
-        <p className="text-slate-500 text-sm">Historical GPA and planning tools</p>
+    <div className="flex-1 p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
+        <div>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Performance Matrix</h1>
+          <p className="text-[var(--muted)] text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-[var(--primary)] font-black">Sync_Success_A1</span></p>
+        </div>
+        <div className="flex items-center gap-3">
+           <Badge className="bg-[var(--accent)] text-[var(--primary)] border-[var(--border)] font-black text-[10px] tracking-widest py-2 px-4 rounded-xl uppercase">Academic Cycle: 2026-B</Badge>
+        </div>
       </header>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-10">
         {/* Historical GPA Trend */}
         <div className="col-span-12 lg:col-span-7">
-          <Card title="Historical GPA Trend" subtitle="Performance across semesters">
-            <div className="h-[350px] w-full mt-6">
+          <Card className="hover:border-[var(--primary)] transition-all shadow-2xl p-8 rounded-[2.5rem] bg-[var(--card)]/50 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-10">
+                <div>
+                   <h3 className="text-2xl font-black tracking-tighter uppercase mb-1">GPA Propagation</h3>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] opacity-60">Linear growth trajectory detected</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-[var(--primary)] opacity-50" />
+            </div>
+            <div className="h-[400px] w-full mt-6">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={gpaData} margin={{ left: -20 }}>
+                <AreaChart data={gpaData} margin={{ left: -20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="colorGpa" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="#F1F5F9" />
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.3} />
                   <XAxis 
                     dataKey="sem" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: '#94A3B8', fontSize: 12 }}
+                    tick={{ fill: 'var(--muted)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}
                     dy={15}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: '#94A3B8', fontSize: 12 }} 
+                    tick={{ fill: 'var(--muted)', fontSize: 10, fontWeight: '900' }} 
                     domain={[2.0, 4.0]}
                     ticks={[2.5, 3.0, 3.5, 4.0]}
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: '#2563EB' }}
+                    cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    contentStyle={{ 
+                        backgroundColor: 'var(--card)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '20px', 
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textTransform: 'uppercase',
+                        fontSize: '10px',
+                        fontWeight: '900'
+                    }}
+                    itemStyle={{ color: 'var(--primary)' }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="trend" 
-                    stroke="#6366F1" 
-                    strokeWidth={3}
+                    stroke="var(--primary)" 
+                    strokeWidth={2}
                     fillOpacity={1} 
                     fill="url(#colorTrend)" 
                     strokeDasharray="5 5"
+                    opacity={0.3}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="gpa" 
-                    stroke="#2563EB" 
-                    strokeWidth={3}
+                    stroke="var(--primary)" 
+                    strokeWidth={4}
                     fillOpacity={1} 
                     fill="url(#colorGpa)" 
+                    activeDot={{ r: 8, fill: 'var(--primary)', stroke: 'var(--card)', strokeWidth: 4 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+            <div className="flex gap-4 mt-8 pt-8 border-t border-[var(--border)] overflow-x-auto scrollbar-hide">
+                {['Projection', 'Actual', 'Delta'].map(m => (
+                    <div key={m} className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--accent)] border border-[var(--border)]">
+                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_8px_var(--primary)]", m === 'Actual' ? "bg-[var(--primary)]" : "bg-[var(--muted)] opacity-30")} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{m}</span>
+                    </div>
+                ))}
+            </div>
           </Card>
         </div>
 
-        {/* GPA Calculator */}
-        <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
-          <Card title="GPA Calculator">
-            <div className="space-y-4">
+        {/* GPA Calculator / Planner */}
+        <div className="col-span-12 lg:col-span-5 flex flex-col gap-10">
+          <Card className="p-8 border-[var(--border)] bg-[var(--accent)]/10 shadow-xl rounded-[2.5rem] group hover:border-[var(--primary)] transition-all">
+            <h3 className="text-2xl font-black tracking-tighter uppercase mb-10 flex items-center gap-4">
+               <Calculator className="w-8 h-8 text-[var(--primary)] group-hover:scale-110 transition-transform" />
+               Impact Analysis
+            </h3>
+            <div className="space-y-6">
               <div>
-                <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest px-1">Course Name</label>
-                <Input placeholder="Introduction to Psychology" />
+                <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Source Module</label>
+                <input 
+                  placeholder="Query Course ID..." 
+                  className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 focus:outline-none focus:border-[var(--primary)] transition-all"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest px-1">Grade (A-F)</label>
-                  <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 appearance-none">
-                    <option>A</option>
-                    <option>B</option>
-                    <option>C</option>
-                    <option>D</option>
-                    <option>F</option>
+                  <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Grade Level</label>
+                  <select className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)] appearance-none transition-all uppercase cursor-pointer">
+                    <option>Alpha (A)</option>
+                    <option>Beta (B)</option>
+                    <option>Gamma (C)</option>
+                    <option>Delta (D)</option>
+                    <option>Epsilon (F)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest px-1">Credits</label>
-                  <Input placeholder="3" type="number" />
+                  <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Power Units</label>
+                  <input 
+                    placeholder="3.0" 
+                    type="number" 
+                    className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 focus:outline-none focus:border-[var(--primary)] transition-all"
+                  />
                 </div>
               </div>
-              <Button className="w-full mt-4 h-12 text-lg">Calculate Impact</Button>
+              <Button className="w-full mt-6 h-16 text-xs font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[var(--primary)]/20">Initialize Projection</Button>
             </div>
           </Card>
 
-          <Card title="Study Planner">
-            <div className="flex items-center justify-between p-2">
-                <div className="flex-1" />
-                <MoreHorizontal className="w-5 h-5 text-slate-400 cursor-pointer" />
+          <Card className="p-8 shadow-2xl rounded-[2.5rem] border-[var(--border)] group hover:border-[var(--primary)] transition-all relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8">
+                <Bell className="w-6 h-6 text-[var(--primary)] animate-pulse" />
             </div>
-            <div className="grid grid-cols-7 gap-2 mt-2 border-b border-slate-100 pb-4">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="text-center">
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-tighter">{day}</span>
-                  <span className="text-xs font-bold text-slate-900">{10 + ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(day)}</span>
+            <h3 className="text-2xl font-black tracking-tighter uppercase mb-8">Temporal Ops</h3>
+            <div className="grid grid-cols-7 gap-3 mt-2 border-b border-[var(--border)] pb-8 mb-8 overflow-x-auto scrollbar-hide">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+                <div key={day} className={cn(
+                    "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all min-w-[70px]",
+                    i === 1 ? "bg-[var(--primary)] border-[var(--primary)] shadow-lg shadow-[var(--primary)]/20" : "bg-[var(--accent)] border-[var(--border)]"
+                )}>
+                  <span className={cn("text-[9px] font-black uppercase tracking-tighter mb-1", i === 1 ? "text-white" : "text-[var(--muted)]")}>{day}</span>
+                  <span className={cn("text-base font-black", i === 1 ? "text-white" : "text-[var(--foreground)]")}>{10 + i}</span>
                 </div>
               ))}
             </div>
-            <div className="space-y-3 mt-4">
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl ml-6 shadow-sm">
-                <span className="text-xs font-bold text-amber-700 block">Biology Midterm Exam</span>
-                <span className="text-[10px] font-medium text-amber-600/70 block">Tuesday, 10:00 AM</span>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl ml-12 shadow-sm">
-                <span className="text-xs font-bold text-blue-700 block">History Research Paper</span>
-                <span className="text-[10px] font-medium text-blue-600/70 block">Thursday, 11:59 PM</span>
-              </div>
-              <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl ml-16 shadow-sm">
-                <span className="text-xs font-bold text-rose-700 block">Math Quiz 4</span>
-                <span className="text-[10px] font-medium text-rose-600/70 block">Friday, 2:00 PM</span>
-              </div>
+            <div className="space-y-4">
+              {[
+                { title: "Bio Midterm Pulse", color: "var(--primary)", time: "10:00 T_SYNC" },
+                { title: "Hist Node Archive", color: "var(--muted)", time: "23:59 T_SYNC" },
+              ].map((task, i) => (
+                <div key={i} className="group/task flex items-center gap-6 p-6 rounded-[1.5rem] bg-[var(--input)] border border-[var(--border)] hover:border-[var(--primary)] transition-all cursor-pointer relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--primary)] shadow-[2px_0_10px_var(--primary)] opacity-60" />
+                    <div className="flex-1">
+                        <span className="text-xs font-black text-[var(--foreground)] uppercase tracking-tight block group-hover/task:text-[var(--primary)] transition-colors">{task.title}</span>
+                        <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1 block opacity-60">{task.time}</span>
+                    </div>
+                </div>
+              ))}
+              <Button variant="outline" className="w-full h-14 rounded-2xl mt-4 border-dashed border-2 border-[var(--border)] text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--accent)]">
+                 <Plus className="w-4 h-4" />
+                 Map New Op
+              </Button>
             </div>
           </Card>
         </div>
