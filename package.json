@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "clean": "rm -rf .next dist",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

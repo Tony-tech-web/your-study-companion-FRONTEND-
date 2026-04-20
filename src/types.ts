@@ -45,13 +45,32 @@ export interface ResearchPaper {
   abstract: string;
 }
 
+export interface StudyPlan {
+  id: string;
+  name: string;
+  subjects: string[];
+  progress: number;
+  totalHours: number;
+}
+
+export interface GPARecord {
+  id: string;
+  semester: string;
+  gpa: number;
+  totalCredits: number;
+  courses: string[];
+  class: string;
+}
+
 export interface LeaderboardEntry {
+  id: string;
   rank: number;
   name: string;
   level: number;
   xp: number;
-  weeklyGain: number;
   avatar: string;
+  student_id: string;
+  weeklyGain?: number;
 }
 
 export interface NewsItem {

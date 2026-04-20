@@ -1,42 +1,114 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Badge } from '../components/UI';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
-import { Plus, MoreHorizontal, TrendingUp, Calculator, Bell } from 'lucide-react';
+import { Plus, MoreHorizontal, TrendingUp, Calculator, Bell, Loader2, Trash2, GraduationCap } from 'lucide-react';
+import { getGPARecords, deleteGPARecord } from '../services/gpa';
+import { GPARecord } from '../types';
 import { cn } from '../lib/utils';
-
-const gpaData = [
-  { sem: 'Sem 1', gpa: 2.8, trend: 3.1 },
-  { sem: 'Sem 2', gpa: 3.2, trend: 3.3 },
-  { sem: 'Sem 3', gpa: 3.1, trend: 3.5 },
-  { sem: 'Sem 4', gpa: 3.4, trend: 3.8 },
-];
+import { motion } from 'motion/react';
 
 export const GPA = () => {
+  const [records, setRecords] = useState<GPARecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    try {
+      const data = await getGPARecords();
+      setRecords(data);
+    } catch (err) {
+      console.error('Failed to fetch GPA records:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this record?')) return;
+    try {
+      await deleteGPARecord(id);
+      setRecords(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      alert('Failed to delete record');
+    }
+  };
+
+  const gpaData = records.map((r, i) => ({
+    sem: r.semester || `Sem ${i + 1}`,
+    gpa: r.gpa,
+    trend: r.gpa + (Math.random() * 0.2 - 0.1) // Placeholder for trend
+  })).reverse();
+
+  const cumulativeGPA = records.length > 0 
+    ? (records.reduce((acc, r) => acc + r.gpa, 0) / records.length).toFixed(2)
+    : "0.00";
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-(--background)">
+        <Loader2 className="w-10 h-10 text-(--primary) animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
+    <div className="flex-1 p-6 md:p-10 bg-(--background) text-(--foreground) overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
       <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Performance Matrix</h1>
-          <p className="text-[var(--muted)] text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-[var(--primary)] font-black">Sync_Success_A1</span></p>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Scholar Matrix</h1>
+          <p className="text-(--muted) text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-(--primary) font-black">Sync_Success_A1</span></p>
         </div>
         <div className="flex items-center gap-3">
-           <Badge className="bg-[var(--accent)] text-[var(--primary)] border-[var(--border)] font-black text-[10px] tracking-widest py-2 px-4 rounded-xl uppercase">Academic Cycle: 2026-B</Badge>
+           <Badge className="bg-(--accent) text-(--primary) border-(--border) font-black text-[10px] tracking-widest py-2 px-4 rounded-xl uppercase">REAL-TIME ACADEMIC SYNC</Badge>
         </div>
       </header>
+
+      {/* Hero Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <Card className="p-8 bg-(--primary) border-none text-white shadow-2xl shadow-(--primary)/20 relative overflow-hidden group">
+           <div className="absolute right-[-10%] top-[-10%] opacity-10 group-hover:scale-110 transition-transform duration-700">
+             <GraduationCap className="w-40 h-40" />
+           </div>
+           <div className="relative z-10">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 mb-4 block">Cumulative GPA</span>
+              <h2 className="text-6xl md:text-7xl font-black tracking-tighter mb-4">{cumulativeGPA}</h2>
+              <Badge className="bg-white/20 text-white border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-lg">Level: High Command</Badge>
+           </div>
+        </Card>
+        
+        <Card className="p-8 flex flex-col justify-center border-(--border) hover:border-(--primary) transition-all">
+           <span className="text-[10px] font-black text-(--muted) uppercase tracking-[0.3em] opacity-60 mb-4 block">Total Credits Earned</span>
+           <div className="flex items-center gap-4">
+              <h2 className="text-5xl font-black tracking-tighter text-(--foreground)">{records.reduce((acc, r) => acc + r.totalCredits, 0)}</h2>
+              <TrendingUp className="w-8 h-8 text-emerald-500" />
+           </div>
+        </Card>
+
+        <Card className="p-8 flex flex-col justify-center border-(--border) hover:border-(--primary) transition-all">
+           <span className="text-[10px] font-black text-(--muted) uppercase tracking-[0.3em] opacity-60 mb-4 block">Active Semesters</span>
+           <div className="flex items-center gap-4">
+              <h2 className="text-5xl font-black tracking-tighter text-(--foreground)">{records.length}</h2>
+              <Badge className="bg-(--accent) text-(--primary) border-none font-black text-[10px] px-3 py-1 uppercase rounded">Active</Badge>
+           </div>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-12 gap-10">
         {/* Historical GPA Trend */}
         <div className="col-span-12 lg:col-span-7">
-          <Card className="hover:border-[var(--primary)] transition-all shadow-2xl p-8 rounded-[2.5rem] bg-[var(--card)]/50 backdrop-blur-sm">
+          <Card className="hover:border-(--primary) transition-all shadow-2xl p-8 rounded-5xl bg-(--card)/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-10">
                 <div>
                    <h3 className="text-2xl font-black tracking-tighter uppercase mb-1">GPA Propagation</h3>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] opacity-60">Linear growth trajectory detected</p>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-(--muted) opacity-60">Academic growth trajectory analysis</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-[var(--primary)] opacity-50" />
+                <TrendingUp className="w-8 h-8 text-(--primary) opacity-50" />
             </div>
             <div className="h-[400px] w-full mt-6">
               <ResponsiveContainer width="100%" height="100%">
@@ -44,10 +116,6 @@ export const GPA = () => {
                   <defs>
                     <linearGradient id="colorGpa" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
@@ -63,8 +131,8 @@ export const GPA = () => {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: 'var(--muted)', fontSize: 10, fontWeight: '900' }} 
-                    domain={[2.0, 4.0]}
-                    ticks={[2.5, 3.0, 3.5, 4.0]}
+                    domain={[0, 4.0]}
+                    ticks={[1.0, 2.0, 3.0, 4.0]}
                   />
                   <Tooltip 
                     cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
@@ -81,16 +149,6 @@ export const GPA = () => {
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="trend" 
-                    stroke="var(--primary)" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorTrend)" 
-                    strokeDasharray="5 5"
-                    opacity={0.3}
-                  />
-                  <Area 
-                    type="monotone" 
                     dataKey="gpa" 
                     stroke="var(--primary)" 
                     strokeWidth={4}
@@ -101,90 +159,59 @@ export const GPA = () => {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex gap-4 mt-8 pt-8 border-t border-[var(--border)] overflow-x-auto scrollbar-hide">
-                {['Projection', 'Actual', 'Delta'].map(m => (
-                    <div key={m} className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--accent)] border border-[var(--border)]">
-                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_8px_var(--primary)]", m === 'Actual' ? "bg-[var(--primary)]" : "bg-[var(--muted)] opacity-30")} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{m}</span>
-                    </div>
-                ))}
-            </div>
           </Card>
         </div>
 
-        {/* GPA Calculator / Planner */}
+        {/* Semester History */}
         <div className="col-span-12 lg:col-span-5 flex flex-col gap-10">
-          <Card className="p-8 border-[var(--border)] bg-[var(--accent)]/10 shadow-xl rounded-[2.5rem] group hover:border-[var(--primary)] transition-all">
-            <h3 className="text-2xl font-black tracking-tighter uppercase mb-10 flex items-center gap-4">
-               <Calculator className="w-8 h-8 text-[var(--primary)] group-hover:scale-110 transition-transform" />
-               Impact Analysis
-            </h3>
-            <div className="space-y-6">
-              <div>
-                <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Source Module</label>
-                <input 
-                  placeholder="Query Course ID..." 
-                  className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 focus:outline-none focus:border-[var(--primary)] transition-all"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Grade Level</label>
-                  <select className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)] appearance-none transition-all uppercase cursor-pointer">
-                    <option>Alpha (A)</option>
-                    <option>Beta (B)</option>
-                    <option>Gamma (C)</option>
-                    <option>Delta (D)</option>
-                    <option>Epsilon (F)</option>
-                  </select>
+           <Card className="p-8 border-(--border) bg-(--accent)/10 shadow-xl rounded-5xl group hover:border-(--primary) transition-all">
+            <div className="flex items-center justify-between mb-8">
+               <h3 className="text-2xl font-black tracking-tighter uppercase">Academic History</h3>
+               <Button className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest"><Plus className="w-4 h-4 mr-2" /> Add</Button>
+            </div>
+            <div className="space-y-4 overflow-y-auto max-h-[500px] custom-scrollbar pr-2">
+              {records.map((record, idx) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={record.id}
+                  className="p-6 rounded-3xl bg-(--card) border border-(--border) hover:border-(--primary) transition-all group/item"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="text-sm font-black uppercase text-(--foreground)">{record.semester}</h4>
+                      <p className="text-[9px] font-black uppercase text-(--muted) opacity-60">{record.totalCredits} Credits • {record.class}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <span className="text-lg font-black text-(--primary)">{record.gpa.toFixed(2)}</span>
+                       <button 
+                         onClick={() => handleDelete(record.id)}
+                         className="p-2 text-(--muted) hover:text-red-500 transition-colors opacity-0 group-hover/item:opacity-100"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              {records.length === 0 && (
+                <div className="py-10 text-center opacity-40">
+                  <p className="text-[10px] font-black uppercase tracking-widest">No logs detected</p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-[var(--muted)] mb-3 block uppercase tracking-[0.2em] opacity-60 px-1">Power Units</label>
-                  <input 
-                    placeholder="3.0" 
-                    type="number" 
-                    className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl px-6 py-4 text-sm font-black text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 focus:outline-none focus:border-[var(--primary)] transition-all"
-                  />
-                </div>
-              </div>
-              <Button className="w-full mt-6 h-16 text-xs font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[var(--primary)]/20">Initialize Projection</Button>
+              )}
             </div>
           </Card>
 
-          <Card className="p-8 shadow-2xl rounded-[2.5rem] border-[var(--border)] group hover:border-[var(--primary)] transition-all relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8">
-                <Bell className="w-6 h-6 text-[var(--primary)] animate-pulse" />
-            </div>
-            <h3 className="text-2xl font-black tracking-tighter uppercase mb-8">Temporal Ops</h3>
-            <div className="grid grid-cols-7 gap-3 mt-2 border-b border-[var(--border)] pb-8 mb-8 overflow-x-auto scrollbar-hide">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                <div key={day} className={cn(
-                    "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all min-w-[70px]",
-                    i === 1 ? "bg-[var(--primary)] border-[var(--primary)] shadow-lg shadow-[var(--primary)]/20" : "bg-[var(--accent)] border-[var(--border)]"
-                )}>
-                  <span className={cn("text-[9px] font-black uppercase tracking-tighter mb-1", i === 1 ? "text-white" : "text-[var(--muted)]")}>{day}</span>
-                  <span className={cn("text-base font-black", i === 1 ? "text-white" : "text-[var(--foreground)]")}>{10 + i}</span>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-4">
-              {[
-                { title: "Bio Midterm Pulse", color: "var(--primary)", time: "10:00 T_SYNC" },
-                { title: "Hist Node Archive", color: "var(--muted)", time: "23:59 T_SYNC" },
-              ].map((task, i) => (
-                <div key={i} className="group/task flex items-center gap-6 p-6 rounded-[1.5rem] bg-[var(--input)] border border-[var(--border)] hover:border-[var(--primary)] transition-all cursor-pointer relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[var(--primary)] shadow-[2px_0_10px_var(--primary)] opacity-60" />
-                    <div className="flex-1">
-                        <span className="text-xs font-black text-[var(--foreground)] uppercase tracking-tight block group-hover/task:text-[var(--primary)] transition-colors">{task.title}</span>
-                        <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1 block opacity-60">{task.time}</span>
-                    </div>
-                </div>
-              ))}
-              <Button variant="outline" className="w-full h-14 rounded-2xl mt-4 border-dashed border-2 border-[var(--border)] text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--accent)]">
-                 <Plus className="w-4 h-4" />
-                 Map New Op
-              </Button>
-            </div>
+          <Card className="p-8 shadow-2xl rounded-5xl border-(--border) bg-(--primary) text-white overflow-hidden relative">
+             <div className="absolute right-[-20px] bottom-[-20px] opacity-20">
+                <Calculator className="w-40 h-40" />
+             </div>
+             <h3 className="text-2xl font-black tracking-tighter uppercase mb-4 relative z-10">Predictive Node</h3>
+             <p className="text-xs font-black uppercase tracking-tight opacity-80 mb-8 relative z-10">
+               Maintain a 3.8+ GPA in the next sequence to secure Scholarship Level Alpha.
+             </p>
+             <Button className="bg-white text-(--primary) hover:bg-white/90 border-none relative z-10 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest w-full">Initialize Simulator</Button>
           </Card>
         </div>
       </div>

@@ -1,127 +1,149 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Badge, Button } from '../components/UI';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-import { Calendar as CalendarIcon, Clock, ChevronRight, Filter, Plus } from 'lucide-react';
-
-const mockEvents = [
-  { id: '1', time: '09:00 AM', title: 'Advanced Calculus', type: 'Lecture', duration: '1.5h', status: 'completed' },
-  { id: '2', time: '11:00 AM', title: 'Neural Systems', type: 'Lab', duration: '2h', status: 'upcoming' },
-  { id: '3', time: '02:30 PM', title: 'Ethics in AI', type: 'Seminar', duration: '1h', status: 'upcoming' },
-  { id: '4', time: '04:00 PM', title: 'Library Session', type: 'Self Study', duration: '3h', status: 'upcoming' },
-];
+import { Calendar as CalendarIcon, Clock, ChevronRight, Filter, Plus, Loader2, Trash2, BookOpen } from 'lucide-react';
+import { getStudyPlans, deleteStudyPlan } from '../services/planner';
+import { StudyPlan } from '../types';
 
 export const Planner = () => {
-  const [selectedDay, setSelectedDay] = useState(19);
+  const [plans, setPlans] = useState<StudyPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      const data = await getStudyPlans();
+      setPlans(data);
+    } catch (err) {
+      console.error('Failed to fetch plans:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this protocol?')) return;
+    try {
+      await deleteStudyPlan(id);
+      setPlans(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      alert('Failed to delete protocol');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-(--background)">
+        <Loader2 className="w-10 h-10 text-(--primary) animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--background)] p-6 md:p-10 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-(--background) p-6 md:p-10 overflow-hidden">
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Chronos Stack</h1>
-          <p className="text-[var(--muted)] text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Temporal Node: <span className="text-[var(--primary)] font-black">2026.04.19</span></p>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Protocol Stack</h1>
+          <p className="text-(--muted) text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-(--primary) font-black">Optimization_Engaged</span></p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-12 px-6 rounded-2xl font-black text-xs uppercase tracking-widest gap-2 shadow-xl shadow-[var(--primary)]/20">
+          <Button className="h-12 px-6 rounded-2xl font-black text-xs uppercase tracking-widest gap-2 shadow-xl shadow-(--primary)/40">
             <Plus className="w-5 h-5" />
-            Append Event
+            Append Protocol
           </Button>
         </div>
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row gap-8 overflow-hidden">
-        {/* Calendar Strip */}
-        <div className="w-full md:w-32 flex flex-row md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pb-4 md:pb-0 scrollbar-hide">
-          {[...Array(7)].map((_, i) => {
-            const day = 17 + i;
-            const isActive = selectedDay === day;
-            return (
-              <motion.button
-                key={day}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedDay(day)}
-                className={cn(
-                  "min-w-[70px] md:min-w-0 md:w-full aspect-square md:h-28 rounded-3xl flex flex-col items-center justify-center transition-all border-2",
-                  isActive 
-                    ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-2xl shadow-[var(--primary)]/30" 
-                    : "bg-[var(--card)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--primary)]/50"
-                )}
-              >
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">{['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'][i]}</span>
-                <span className="text-2xl md:text-3xl font-black">{day}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-
-        {/* Timeline Content */}
-        <Card className="flex-1 overflow-hidden flex flex-col p-0">
-          <div className="p-8 border-b border-[var(--border)] flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-4">
-               <CalendarIcon className="w-6 h-6 text-[var(--primary)]" />
-               <span className="text-xl font-black uppercase tracking-tighter">Timeline Sequence</span>
-            </div>
-            <button className="text-[var(--muted)] hover:text-[var(--primary)] transition-colors">
-              <Filter className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar pb-32 md:pb-8">
-            {mockEvents.map((event, idx) => (
+        {/* Main List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-32">
+          <div className="space-y-6">
+            {plans.map((plan, idx) => (
               <motion.div
-                key={event.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="group flex gap-8 relative"
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
               >
-                <div className="w-20 pt-1 shrink-0">
-                  <span className="text-xs font-black text-[var(--foreground)] opacity-80">{event.time}</span>
-                  <div className="text-[10px] font-bold text-[var(--muted)] mt-1">{event.duration}</div>
-                </div>
-
-                <div className="relative flex-1">
-                  {/* Vertical Line Connector */}
-                  {idx !== mockEvents.length - 1 && (
-                    <div className="absolute left-[-2rem] top-8 bottom-[-1.5rem] w-0.5 bg-[var(--border)] opacity-30" />
-                  )}
-                  {/* Node Dot */}
-                  <div className={cn(
-                    "absolute left-[-2.3rem] top-2 w-3 h-3 rounded-full border-2 bg-[var(--card)] z-10",
-                    event.status === 'completed' ? "border-[var(--primary)] bg-[var(--primary)]" : "border-[var(--border)]"
-                  )} />
-
-                  <div className={cn(
-                     "p-6 rounded-[2rem] border transition-all hover:translate-x-2 cursor-pointer",
-                     event.status === 'completed' 
-                       ? "bg-[var(--accent)]/30 border-[var(--border)]" 
-                       : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--primary)] shadow-md"
-                  )}>
-                    <div className="flex items-center justify-between">
+                <Card className="p-8 group hover:border-(--primary) transition-all cursor-pointer relative overflow-hidden">
+                   <div className="absolute right-0 top-0 bottom-0 w-1 bg-(--primary) translate-x-full group-hover:translate-x-0 transition-transform" />
+                   <div className="flex justify-between items-start mb-6">
                       <div>
-                        <Badge className={cn(
-                          "mb-3 font-black text-[9px] tracking-[0.2em] uppercase py-1 px-3 rounded-lg",
-                          event.type === 'Lecture' ? "bg-blue-500/10 text-blue-500" :
-                          event.type === 'Lab' ? "bg-amber-500/10 text-amber-500" :
-                          "bg-purple-500/10 text-purple-500"
-                        )}>{event.type}</Badge>
-                        <h3 className={cn(
-                          "text-lg font-black tracking-tight uppercase",
-                          event.status === 'completed' ? "opacity-40 line-through" : ""
-                        )}>{event.title}</h3>
+                        <Badge className="bg-(--accent) text-(--primary) border-(--border) font-black text-[9px] uppercase tracking-widest py-1.5 px-4 rounded-lg mb-3">SYNC: ACTIVE</Badge>
+                        <h3 className="text-2xl font-black uppercase tracking-tighter text-(--foreground) group-hover:text-(--primary) transition-colors">{plan.name}</h3>
                       </div>
-                      <ChevronRight className={cn(
-                         "w-6 h-6 text-[var(--muted)] group-hover:text-[var(--primary)] transition-all",
-                         event.status === 'completed' ? "opacity-20" : ""
-                      )} />
-                    </div>
-                  </div>
-                </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(plan.id); }}
+                        className="p-3 text-(--muted) hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                   </div>
+
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black text-(--muted) uppercase tracking-widest opacity-60">Allocation</span>
+                        <div className="flex items-center gap-2 text-(--foreground) font-black uppercase">
+                          <Clock className="w-4 h-4 text-(--primary)" />
+                          <span>{plan.totalHours}H</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black text-(--muted) uppercase tracking-widest opacity-60">Structure</span>
+                        <div className="flex items-center gap-2 text-(--foreground) font-black uppercase">
+                          <BookOpen className="w-4 h-4 text-(--primary)" />
+                          <span>{plan.subjects.length} Subjects</span>
+                        </div>
+                      </div>
+                      <div className="col-span-2 md:col-span-1 space-y-2">
+                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                           <span className="text-(--muted) opacity-60">Completion</span>
+                           <span className="text-(--primary)">{plan.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-(--accent) rounded-full overflow-hidden border border-(--border)">
+                           <div 
+                             className="h-full bg-(--primary) shadow-[0_0_10px_var(--primary)]/40 transition-all duration-1000" 
+                             style={{ width: `${plan.progress}%` }} 
+                           />
+                        </div>
+                      </div>
+                   </div>
+                </Card>
               </motion.div>
             ))}
+            {plans.length === 0 && (
+              <div className="py-20 text-center border-2 border-dashed border-(--border) rounded-5xl opacity-40">
+                 <p className="text-[10px] font-black uppercase tracking-widest">No active protocols detected in this sector</p>
+              </div>
+            )}
           </div>
-        </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="w-full md:w-80 shrink-0">
+          <Card className="p-8 h-fit shadow-xl border-(--primary)/20">
+             <h4 className="text-[10px] font-black text-(--muted) uppercase tracking-[0.3em] opacity-60 mb-8 px-1">Sector Metrics</h4>
+             <div className="space-y-6">
+                {[
+                  { label: "Total Protocols", value: plans.length },
+                  { label: "Avg Completion", value: `${Math.round(plans.reduce((acc, p) => acc + p.progress, 0) / (plans.length || 1))}%` },
+                  { label: "Hours Allocated", value: `${plans.reduce((acc, p) => acc + p.totalHours, 0)}H` }
+                ].map((stat, i) => (
+                  <div key={i} className="p-6 bg-(--input) rounded-2xl border border-(--border) shadow-sm">
+                    <span className="text-[9px] font-black text-(--muted) uppercase tracking-widest block mb-2">{stat.label}</span>
+                    <span className="text-xl font-black text-(--foreground) tracking-tighter uppercase">{stat.value}</span>
+                  </div>
+                ))}
+             </div>
+             <Button variant="outline" className="w-full mt-10 border-(--border) text-(--muted) font-black uppercase tracking-widest text-[10px] py-4 rounded-xl hover:text-(--primary) hover:border-(--primary)">
+                Sync Network Data
+             </Button>
+          </Card>
+        </div>
       </div>
     </div>
   );
