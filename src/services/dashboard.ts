@@ -1,14 +1,49 @@
 import api from './api';
 import { User, Task, StudyActivity } from '../types';
 
+export interface FullStats {
+  user: User;
+  currentGpa: string;
+  aiInteractions: number;
+  researchMinutes: number;
+  studyMinutes: number;
+}
+
+export const getFullDashboardStats = async (): Promise<FullStats> => {
+  const [statsRes, gpaRes] = await Promise.allSettled([
+    api.get('/api/stats/me'),
+    api.get('/api/gpa'),
+  ]);
+
+  const stats = statsRes.status === 'fulfilled' ? statsRes.value.data : {};
+  const gpaRecords = gpaRes.status === 'fulfilled' ? gpaRes.value.data : [];
+
+  const latestGpa = gpaRecords.length > 0
+    ? Math.max(...gpaRecords.map((r: any) => parseFloat(r.gpa) || 0)).toFixed(2)
+    : '0.00';
+
+  return {
+    user: {
+      name: stats.profile?.full_name || 'Student',
+      level: stats.level || 1,
+      xp: stats.xp_points || 0,
+      maxXp: (stats.level || 1) * 100 + 100,
+    },
+    currentGpa: latestGpa,
+    aiInteractions: stats.total_ai_interactions || 0,
+    researchMinutes: stats.total_research_minutes || 0,
+    studyMinutes: stats.total_study_minutes || 0,
+  };
+};
+
 export const getUserStats = async (): Promise<User> => {
   const response = await api.get('/api/stats/me');
   const data = response.data;
   return {
-    name: data.profile?.full_name || 'Student Node',
-    level: data.level,
-    xp: data.xp_points,
-    maxXp: data.level * 100 + 100, // Matching backend level up logic
+    name: data.profile?.full_name || 'Student',
+    level: data.level || 1,
+    xp: data.xp_points || 0,
+    maxXp: (data.level || 1) * 100 + 100,
   };
 };
 
@@ -18,26 +53,18 @@ export const getTasks = async (): Promise<Task[]> => {
     id: plan.id,
     title: plan.name,
     dueDate: new Date(plan.created_at).toLocaleDateString(),
-    category: plan.subjects?.[0] || 'General',
-    completed: false, // StudyPlan model doesn't have a completed field yet
+    category: Array.isArray(plan.subjects) && plan.subjects.length > 0 ? plan.subjects[0] : 'General',
+    completed: false,
   }));
 };
 
 export const getActivity = async (): Promise<StudyActivity[]> => {
   const response = await api.get('/api/activity');
-  // Map recent activity to daily hours (simple mapping for now)
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dailyHours: Record<string, number> = {
-    'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0, 'Sun': 0
-  };
-  
+  const dailyHours: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
   response.data.forEach((entry: any) => {
     const dayName = days[new Date(entry.activity_date).getDay()];
-    dailyHours[dayName] += entry.activity_count / 60; // Assuming count is minutes
+    dailyHours[dayName] += entry.activity_count / 60;
   });
-
-  return Object.entries(dailyHours).map(([day, hours]) => ({
-    day,
-    hours: Math.round(hours * 10) / 10
-  }));
+  return Object.entries(dailyHours).map(([day, hours]) => ({ day, hours: Math.round(hours * 10) / 10 }));
 };
