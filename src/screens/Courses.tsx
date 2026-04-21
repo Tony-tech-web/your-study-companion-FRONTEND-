@@ -48,7 +48,7 @@ export const Courses = () => {
   }
 
   return (
-    <div className="flex-1 p-6 md:p-10 bg-(--background) text-(--foreground) overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
+    <div className="flex-1 p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
       <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Archives & Assets</h1>

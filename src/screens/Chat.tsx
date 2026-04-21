@@ -46,7 +46,7 @@ export const Chat = () => {
   }
 
   return (
-    <div className="flex-1 flex bg-(--background) overflow-hidden">
+    <div className="flex-1 flex bg-[var(--background)] overflow-hidden">
       {/* Sidebar List (Mocked contacts for now as there is no profiles list endpoint yet) */}
       <div className="w-80 border-r border-(--border) hidden md:flex flex-col bg-(--card)/50 shrink-0">
         <header className="p-8 pb-4 shrink-0">

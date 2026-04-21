@@ -48,7 +48,7 @@ export const Leaderboard = () => {
   const others = data.slice(3);
 
   return (
-    <div className="flex-1 p-6 md:p-10 bg-(--background) text-(--foreground) flex flex-col overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
+    <div className="flex-1 p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] flex flex-col overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
       <header className="mb-12 shrink-0">
         <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Global Ranking</h1>
         <p className="text-(--muted) text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Status: <span className="text-(--primary) font-black">Online_Cluster_7</span></p>
