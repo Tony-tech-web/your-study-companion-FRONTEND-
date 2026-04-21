@@ -66,7 +66,7 @@ const AddGPAModal = ({ onClose, onSave }: { onClose: () => void; onSave: (r: GPA
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-1.5 block">GPA (0–5)</label>
+              <label className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-1.5 block">GPA (0-5)</label>
               <Input type="number" value={gpa} onChange={e => setGpa(e.target.value)} placeholder="e.g. 4.2" min="0" max="5" step="0.01" />
             </div>
             <div>
@@ -205,7 +205,7 @@ export const GPA = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="text-sm font-black text-[var(--foreground)]">{record.semester}</h4>
-                      <p className="text-[10px] text-[var(--muted)] opacity-60 mt-0.5">{record.totalCredits} credits · {record.class}</p>
+                      <p className="text-[10px] text-[var(--muted)] opacity-60 mt-0.5">{record.totalCredits} credits   {record.class}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-black text-[var(--primary)]">{Number(record.gpa).toFixed(2)}</span>

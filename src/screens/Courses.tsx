@@ -133,10 +133,10 @@ export const Courses = () => {
 
 const BookOpenIcon = ({ category }: { category: string }) => {
   const icons: Record<string, React.ReactNode> = {
-    Math: <div className="text-lg">∑</div>,
-    Science: <div className="text-lg">⌬</div>,
-    History: <div className="text-lg">📜</div>,
-    Literature: <div className="text-lg">📖</div>,
+    Math: <div className="text-lg"></div>,
+    Science: <div className="text-lg"></div>,
+    History: <div className="text-lg"></div>,
+    Literature: <div className="text-lg"></div>,
   };
   return icons[category] || <FileText className="w-5 h-5" />;
 };

@@ -38,7 +38,7 @@ export const Dashboard = () => {
     : `${stats.studyMinutes}m`;
 
   const statCards = [
-    { label: 'Neural Progress', value: `${xpPercent}%`, sub: `Lvl ${stats.user.level} · ${stats.user.xp}/${stats.user.maxXp} XP`, icon: Zap, color: 'text-orange-500', bg: 'bg-orange-500/10', href: null },
+    { label: 'Neural Progress', value: `${xpPercent}%`, sub: `Lvl ${stats.user.level}   ${stats.user.xp}/${stats.user.maxXp} XP`, icon: Zap, color: 'text-orange-500', bg: 'bg-orange-500/10', href: null },
     { label: 'Current GPA', value: stats.currentGpa, sub: 'Latest semester', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', href: '/gpa' },
     { label: 'AI Interactions', value: stats.aiInteractions.toString(), sub: 'Total sessions', icon: Brain, color: 'text-blue-500', bg: 'bg-blue-500/10', href: '/ai' },
     { label: 'Study Time', value: studyDisplay, sub: 'Total tracked', icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10', href: null },
@@ -55,7 +55,7 @@ export const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-bold text-xs py-1.5 px-3 rounded-lg">● Online</Badge>
+          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-bold text-xs py-1.5 px-3 rounded-lg">* Online</Badge>
           <span className="text-[var(--muted)] text-xs">
             {stats.user.name !== 'Student' ? `Welcome, ${stats.user.name.split(' ')[0]}` : ''}
           </span>

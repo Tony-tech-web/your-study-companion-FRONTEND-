@@ -68,7 +68,7 @@ export const Leaderboard = () => {
                 <span className="text-5xl font-black text-(--muted) absolute top-6 right-8 italic opacity-10">02</span>
                 <img src={topThree[1].avatar} className="w-20 h-20 rounded-3xl mb-6 border-4 border-(--border) shadow-md group-hover:scale-110 transition-transform referrer-policy-no-referrer" />
                 <h3 className="text-xl font-black uppercase tracking-tight text-(--foreground) text-center">{topThree[1].name}</h3>
-                <p className="text-[10px] text-(--muted) font-black uppercase tracking-widest mt-2 opacity-60 text-center">NODE LVL {topThree[1].level} • {topThree[1].xp.toLocaleString()} XP</p>
+                <p className="text-[10px] text-(--muted) font-black uppercase tracking-widest mt-2 opacity-60 text-center">NODE LVL {topThree[1].level}  {topThree[1].xp.toLocaleString()} XP</p>
                 {topThree[1].weeklyGain > 0 && (
                   <div className="mt-6 px-5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+{topThree[1].weeklyGain} XP WAVE</span>
@@ -89,7 +89,7 @@ export const Leaderboard = () => {
                     <Trophy className="absolute -top-8 -left-8 w-14 h-14 text-(--primary) drop-shadow-[0_0_15px_var(--primary)] rotate-12" />
                 </div>
                 <h3 className="text-2xl font-black text-(--foreground) uppercase tracking-tighter text-center">{topThree[0].name}</h3>
-                <p className="text-[11px] text-(--primary) font-black uppercase tracking-[0.2em] mt-2 text-center">SUPREME NODE • {topThree[0].xp.toLocaleString()} XP</p>
+                <p className="text-[11px] text-(--primary) font-black uppercase tracking-[0.2em] mt-2 text-center">SUPREME NODE  {topThree[0].xp.toLocaleString()} XP</p>
                 <div className="mt-8 px-8 py-3 rounded-2xl bg-(--primary) shadow-2xl shadow-[var(--primary)]/40 hover:scale-105 active:scale-95 transition-all cursor-pointer">
                   <span className="text-xs font-black text-white uppercase tracking-[0.2em]">GLOBAL CHAMPION</span>
                 </div>
@@ -105,7 +105,7 @@ export const Leaderboard = () => {
                 <span className="text-5xl font-black text-(--muted) absolute top-6 right-8 italic opacity-10">03</span>
                 <img src={topThree[2].avatar} className="w-20 h-20 rounded-3xl mb-6 border-4 border-(--border) shadow-md group-hover:scale-110 transition-transform referrer-policy-no-referrer" />
                 <h3 className="text-xl font-black uppercase tracking-tight text-(--foreground) text-center">{topThree[2].name}</h3>
-                <p className="text-[10px] text-(--muted) font-black uppercase tracking-widest mt-2 opacity-60 text-center">NODE LVL {topThree[2].level} • {topThree[2].xp.toLocaleString()} XP</p>
+                <p className="text-[10px] text-(--muted) font-black uppercase tracking-widest mt-2 opacity-60 text-center">NODE LVL {topThree[2].level}  {topThree[2].xp.toLocaleString()} XP</p>
                 {topThree[2].weeklyGain > 0 && (
                   <div className="mt-6 px-5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+{topThree[2].weeklyGain} XP WAVE</span>
