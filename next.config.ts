@@ -1,8 +1,6 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    remotePatterns: [{ protocol: 'https' as const, hostname: '**' }],
   },
 };
 
