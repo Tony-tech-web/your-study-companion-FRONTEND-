@@ -51,7 +51,7 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, userMsg]);
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         contents: userInput,
         config: {
             systemInstruction: "You are a professional academic assistant in a futuristic student hub. Your tone is technical, supportive, and efficient. Use academic terminology where appropriate. Keep responses relatively concise but high-value."

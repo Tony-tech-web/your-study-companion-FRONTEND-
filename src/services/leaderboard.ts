@@ -10,7 +10,7 @@ export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
     xp: entry.xp_points || 0,
     level: entry.level || 1,
     name: entry.profile?.full_name || entry.profile?.email_username || 'Anonymous',
-    avatar: entry.profile?.avatar_url || '',
+    avatar: entry.profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(entry.profile?.full_name || entry.profile?.email_username || 'Student')}`,
     student_id: entry.profile?.student_id || 'N/A',
     weeklyGain: 0,
   }));

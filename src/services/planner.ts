@@ -15,10 +15,17 @@ export const getStudyPlans = async (): Promise<StudyPlan[]> => {
 export const createStudyPlan = async (data: Partial<StudyPlan>): Promise<StudyPlan> => {
   const response = await api.post('/api/study-plans', {
     name: data.name,
-    subjects: JSON.stringify(data.subjects),
+    subjects: data.subjects, // send as array; backend stores as JSON
     total_hours: data.totalHours,
   });
-  return response.data;
+  const plan = response.data;
+  return {
+    id: plan.id,
+    name: plan.name,
+    subjects: Array.isArray(plan.subjects) ? plan.subjects : JSON.parse(plan.subjects || '[]'),
+    progress: plan.progress || 0,
+    totalHours: plan.total_hours || 0,
+  };
 };
 
 export const deleteStudyPlan = async (id: string): Promise<void> => {
