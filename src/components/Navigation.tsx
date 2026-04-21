@@ -1,9 +1,10 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Sparkles, GraduationCap, Calendar,
   BookOpen, Search, MessageSquare, Newspaper, Trophy,
-  Moon, Sun, Coffee, LogOut
+  Moon, Sun, Coffee, LogOut, ChevronLeft, ChevronRight,
+  Menu
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTheme } from 'next-themes';
@@ -12,21 +13,180 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { id: 'ai', label: 'AI Assistant', icon: Sparkles, href: '/ai' },
-  { id: 'gpa', label: 'GPA', icon: GraduationCap, href: '/gpa' },
-  { id: 'planner', label: 'Planner', icon: Calendar, href: '/planner' },
-  { id: 'courses', label: 'Courses', icon: BookOpen, href: '/courses' },
-  { id: 'research', label: 'Research', icon: Search, href: '/research' },
-  { id: 'chat', label: 'Chat', icon: MessageSquare, href: '/chat' },
-  { id: 'news', label: 'News', icon: Newspaper, href: '/news' },
-  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy, href: '/leaderboard' },
+  { id: 'dashboard', label: 'Dashboard',    icon: LayoutDashboard, href: '/dashboard' },
+  { id: 'ai',        label: 'AI Assistant', icon: Sparkles,         href: '/ai' },
+  { id: 'gpa',       label: 'GPA',          icon: GraduationCap,   href: '/gpa' },
+  { id: 'planner',   label: 'Planner',      icon: Calendar,        href: '/planner' },
+  { id: 'courses',   label: 'Courses',      icon: BookOpen,        href: '/courses' },
+  { id: 'research',  label: 'Research',     icon: Search,          href: '/research' },
+  { id: 'chat',      label: 'Chat',         icon: MessageSquare,   href: '/chat' },
+  { id: 'news',      label: 'News',         icon: Newspaper,       href: '/news' },
+  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy,         href: '/leaderboard' },
 ] as const;
 
+const STORAGE_KEY = 'orbit-sidebar-collapsed';
+
 export const Sidebar = () => {
+  const [collapsed, setCollapsed] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const router = useRouter();
+
+  // Persist collapsed state
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'true') setCollapsed(true);
+  }, []);
+
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem(STORAGE_KEY, String(next));
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const displayName = (user?.user_metadata?.full_name as string)?.split(' ')[0]
+    || user?.email?.split('@')[0]
+    || 'Student';
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <aside
+      className={cn(
+        'hidden lg:flex flex-col h-screen shrink-0 border-r border-[var(--border)]',
+        'bg-[var(--card)] transition-[width] duration-200 ease-in-out overflow-hidden relative',
+        collapsed ? 'w-[60px]' : 'w-[220px]'
+      )}
+    >
+      {/* Logo row */}
+      <div className={cn(
+        'flex items-center h-14 px-3 border-b border-[var(--border)] shrink-0',
+        collapsed ? 'justify-center' : 'justify-between'
+      )}>
+        {!collapsed && (
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-7 h-7 rounded-lg bg-[var(--primary)] flex items-center justify-center shrink-0 shadow-sm">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <span className="text-sm font-black tracking-tight text-[var(--foreground)] uppercase whitespace-nowrap">Orbit</span>
+          </div>
+        )}
+        <button
+          onClick={toggle}
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all shrink-0"
+        >
+          {collapsed
+            ? <ChevronRight className="w-4 h-4" />
+            : <ChevronLeft className="w-4 h-4" />
+          }
+        </button>
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 flex flex-col gap-0.5 p-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        {navItems.map((item) => {
+          const active = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              title={collapsed ? item.label : undefined}
+              className={cn(
+                'flex items-center gap-3 rounded-lg transition-all duration-150 group relative shrink-0',
+                collapsed ? 'h-9 w-9 mx-auto justify-center' : 'h-9 px-2.5',
+                active
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]'
+              )}
+            >
+              <item.icon className="w-4 h-4 shrink-0" />
+              {!collapsed && (
+                <span className="text-[13px] font-medium whitespace-nowrap overflow-hidden">
+                  {item.label}
+                </span>
+              )}
+              {/* Tooltip when collapsed */}
+              {collapsed && (
+                <span className="absolute left-full ml-2 px-2 py-1 rounded-md text-xs font-medium bg-[var(--foreground)] text-[var(--background)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                  {item.label}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bottom section */}
+      <div className={cn(
+        'p-2 border-t border-[var(--border)] space-y-1 shrink-0',
+      )}>
+        {/* Theme toggles */}
+        <div className={cn(
+          'flex gap-1',
+          collapsed ? 'flex-col items-center' : 'items-center'
+        )}>
+          {[
+            { value: 'light', icon: Sun, label: 'Light' },
+            { value: 'dark',  icon: Moon, label: 'Dark' },
+            { value: 'brown', icon: Coffee, label: 'Warm' },
+          ].map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              title={label}
+              className={cn(
+                'flex items-center justify-center rounded-lg transition-all duration-150',
+                collapsed ? 'w-9 h-7' : 'flex-1 h-7',
+                theme === value
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]'
+              )}
+            >
+              <Icon className="w-3.5 h-3.5" />
+            </button>
+          ))}
+        </div>
+
+        {/* User row */}
+        <div className={cn(
+          'flex items-center gap-2 rounded-lg px-1.5 py-1.5 mt-1',
+          collapsed ? 'justify-center' : ''
+        )}>
+          <div className="w-6 h-6 rounded-md bg-[var(--primary)] text-white flex items-center justify-center text-[10px] font-black shrink-0">
+            {initials}
+          </div>
+          {!collapsed && (
+            <>
+              <div className="flex-1 overflow-hidden min-w-0">
+                <p className="text-[12px] font-semibold text-[var(--foreground)] truncate leading-tight">{displayName}</p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="p-1 rounded-md text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+export const MobileNav = () => {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -34,125 +194,91 @@ export const Sidebar = () => {
     router.push('/login');
   };
 
-  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'ST';
-  const displayName = (user?.user_metadata?.full_name as string) || (user?.email?.split('@')[0]) || 'Student';
-
   return (
-    <div className="w-72 border-r border-[var(--border)] h-screen bg-[var(--card)] hidden lg:flex flex-col p-6 overflow-y-auto shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-3 mb-10 px-2">
-        <div className="w-10 h-10 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-lg">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-        </div>
-        <div>
-          <span className="text-xl font-black text-[var(--foreground)] tracking-tight uppercase block leading-none">Orbit</span>
-          <span className="text-[9px] font-bold text-[var(--muted)] opacity-50 uppercase tracking-[0.2em] mt-0.5 block">Academic OS v1.0</span>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] opacity-40" />
-        <input
-          placeholder="Search..."
-          className="w-full bg-[var(--input)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 focus:outline-none focus:border-[var(--primary)] transition-all"
-        />
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-1">
-        {navItems.map((item) => {
-          const active = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group relative',
-                active
-                  ? 'bg-[var(--primary)] text-white shadow-lg'
-                  : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]'
-              )}
-            >
-              <div className={cn(
-                'w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0',
-                active ? 'bg-white/15' : 'bg-[var(--border)] group-hover:scale-110'
-              )}>
-                <item.icon className="w-4 h-4" />
-              </div>
-              <span className="text-sm font-bold tracking-wide">{item.label}</span>
-              {active && <div className="absolute right-0 top-2 bottom-2 w-0.5 bg-white/60 rounded-full" />}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Theme switcher */}
-      <div className="mt-6 grid grid-cols-3 gap-2">
-        {[
-          { value: 'light', icon: Sun },
-          { value: 'dark', icon: Moon },
-          { value: 'brown', icon: Coffee },
-        ].map(({ value, icon: Icon }) => (
-          <button
-            key={value}
-            onClick={() => setTheme(value)}
-            className={cn(
-              'p-3 rounded-xl flex items-center justify-center transition-all',
-              theme === value ? 'bg-[var(--primary)] text-white shadow-md' : 'bg-[var(--input)] text-[var(--muted)] hover:text-[var(--foreground)]'
-            )}
-          >
-            <Icon className="w-4 h-4" />
-          </button>
-        ))}
-      </div>
-
-      {/* User */}
-      <div className="mt-4 pt-4 border-t border-[var(--border)] flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center text-xs font-black shrink-0">
-          {initials}
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <p className="text-sm font-bold text-[var(--foreground)] truncate">{displayName}</p>
-          <p className="text-[10px] text-[var(--muted)] opacity-60 truncate uppercase tracking-wide">{user?.email}</p>
+    <>
+      {/* Top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-12 bg-[var(--card)]/95 backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between px-4 z-40">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-[var(--primary)] flex items-center justify-center">
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">Orbit</span>
         </div>
         <button
-          onClick={handleSignOut}
-          className="p-2 text-[var(--muted)] hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
-          title="Sign out"
+          onClick={() => setOpen(true)}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all"
         >
-          <LogOut className="w-4 h-4" />
+          <Menu className="w-5 h-5" />
         </button>
       </div>
-    </div>
-  );
-};
 
-export const MobileNav = () => {
-  const pathname = usePathname();
-  const mobileItems = navItems.slice(0, 5);
+      {/* Drawer overlay */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="relative w-64 h-full bg-[var(--card)] border-r border-[var(--border)] flex flex-col p-3 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[var(--primary)] flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-black uppercase text-[var(--foreground)]">Orbit</span>
+              </div>
+              <button onClick={() => setOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-md text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
 
-  return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-[var(--card)]/90 backdrop-blur-2xl border-t border-[var(--border)] px-4 flex items-center justify-around z-50">
-      {mobileItems.map((item) => {
-        const active = pathname === item.href;
-        return (
-          <Link
-            key={item.id}
-            href={item.href}
-            className={cn(
-              'flex flex-col items-center gap-1 p-2 relative',
-              active ? 'text-[var(--primary)]' : 'text-[var(--muted)]'
-            )}
-          >
-            {active && <div className="absolute -top-2 w-1 h-1 rounded-full bg-[var(--primary)]" />}
-            <item.icon className={cn('w-5 h-5 transition-all', active ? 'scale-110' : '')} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">{item.label.split(' ')[0]}</span>
-          </Link>
-        );
-      })}
-    </div>
+            <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto">
+              {navItems.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 h-9 px-2.5 rounded-lg transition-all',
+                      active
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]'
+                    )}
+                  >
+                    <item.icon className="w-4 h-4 shrink-0" />
+                    <span className="text-[13px] font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="border-t border-[var(--border)] pt-3 space-y-2">
+              <div className="flex gap-1">
+                {[
+                  { value: 'light', icon: Sun },
+                  { value: 'dark',  icon: Moon },
+                  { value: 'brown', icon: Coffee },
+                ].map(({ value, icon: Icon }) => (
+                  <button key={value} onClick={() => setTheme(value)}
+                    className={cn('flex-1 h-8 rounded-lg flex items-center justify-center transition-all',
+                      theme === value ? 'bg-[var(--primary)] text-white' : 'text-[var(--muted)] hover:bg-[var(--accent)]'
+                    )}>
+                    <Icon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleSignOut}
+                className="w-full flex items-center gap-2 h-9 px-2.5 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 transition-all text-[13px] font-medium">
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

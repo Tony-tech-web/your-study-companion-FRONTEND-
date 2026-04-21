@@ -118,7 +118,7 @@ export const GPA = () => {
   if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" /></div>;
 
   return (
-    <div className="flex-1 p-6 md:p-8 bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-28 lg:pb-8">
+    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-28 lg:pb-8">
       <AnimatePresence>{showModal && <AddGPAModal onClose={() => setShowModal(false)} onSave={r => setRecords(prev => [r, ...prev])} />}</AnimatePresence>
 
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -1,9 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Badge } from '../components/UI';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getFullDashboardStats, getTasks, getActivity, FullStats } from '../services/dashboard';
 import { Task, StudyActivity } from '../types';
 import { cn } from '../lib/utils';
@@ -26,196 +23,187 @@ export const Dashboard = () => {
   }, []);
 
   if (loading || !stats) {
-    return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" /></div>;
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[var(--background)]">
+        <Loader2 className="w-5 h-5 text-[var(--primary)] animate-spin" />
+      </div>
+    );
   }
 
-  const xpPercent = Math.round((stats.user.xp / stats.user.maxXp) * 100);
-  const researchDisplay = stats.researchMinutes >= 60
-    ? `${Math.floor(stats.researchMinutes / 60)}h ${stats.researchMinutes % 60}m`
-    : `${stats.researchMinutes}m`;
-  const studyDisplay = stats.studyMinutes >= 60
-    ? `${Math.floor(stats.studyMinutes / 60)}h`
-    : `${stats.studyMinutes}m`;
+  const xpPct = Math.round((stats.user.xp / stats.user.maxXp) * 100);
 
-  const statCards = [
-    { label: 'Neural Progress', value: `${xpPercent}%`, sub: `Lvl ${stats.user.level}   ${stats.user.xp}/${stats.user.maxXp} XP`, icon: Zap, color: 'text-orange-500', bg: 'bg-orange-500/10', href: null },
-    { label: 'Current GPA', value: stats.currentGpa, sub: 'Latest semester', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', href: '/gpa' },
-    { label: 'AI Interactions', value: stats.aiInteractions.toString(), sub: 'Total sessions', icon: Brain, color: 'text-blue-500', bg: 'bg-blue-500/10', href: '/ai' },
-    { label: 'Study Time', value: studyDisplay, sub: 'Total tracked', icon: Clock, color: 'text-purple-500', bg: 'bg-purple-500/10', href: null },
+  const cards = [
+    { label: 'Neural Progress', value: `${xpPct}%`, sub: `Lvl ${stats.user.level}`, icon: Zap, color: 'var(--primary)' },
+    { label: 'Current GPA', value: stats.currentGpa, sub: 'Latest semester', icon: TrendingUp, color: '#10b981', href: '/gpa' },
+    { label: 'AI Sessions', value: String(stats.aiInteractions), sub: 'Total', icon: Brain, color: '#6366f1', href: '/ai' },
+    { label: 'Study Time', value: stats.studyMinutes >= 60 ? `${Math.floor(stats.studyMinutes/60)}h` : `${stats.studyMinutes}m`, sub: 'Tracked', icon: Clock, color: '#8b5cf6' },
   ];
 
   return (
-    <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar pb-28 lg:pb-8">
-      {/* Header */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight">Dashboard</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">
-            Neural synergy status: <span className="text-[var(--primary)] font-bold">OPTIMIZED</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-bold text-xs py-1.5 px-3 rounded-lg">* Online</Badge>
-          <span className="text-[var(--muted)] text-xs">
-            {stats.user.name !== 'Student' ? `Welcome, ${stats.user.name.split(' ')[0]}` : ''}
+    <div className="flex-1 overflow-y-auto bg-[var(--background)] custom-scrollbar">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Dashboard</h1>
+            <p className="text-xs text-[var(--muted)] mt-0.5">
+              {stats.user.name !== 'Student' ? `Welcome back, ${stats.user.name.split(' ')[0]}` : 'Welcome back'}
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Online
           </span>
         </div>
-      </header>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-          >
-            <div
-              onClick={() => card.href && router.push(card.href)}
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {cards.map((c, i) => (
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06, duration: 0.3 }}
+              onClick={() => c.href && router.push(c.href)}
               className={cn(
-                'bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 transition-all hover:border-[var(--primary)]/40 hover:shadow-md',
-                card.href ? 'cursor-pointer' : ''
+                'bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 transition-all duration-150',
+                c.href ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:shadow-sm' : ''
               )}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">{card.label}</span>
-                <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center', card.bg)}>
-                  <card.icon className={cn('w-4 h-4', card.color)} />
+                <p className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wide">{c.label}</p>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${c.color}18` }}>
+                  <c.icon className="w-3.5 h-3.5" style={{ color: c.color }} />
                 </div>
               </div>
-              <p className="text-3xl font-black text-[var(--foreground)] tracking-tight">{card.value}</p>
-              <p className="text-xs text-[var(--muted)] mt-1 opacity-70">{card.sub}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <p className="text-2xl font-bold text-[var(--foreground)] tracking-tight">{c.value}</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">{c.sub}</p>
+            </motion.div>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        {/* Activity Chart */}
-        <div className="col-span-12 lg:col-span-8">
-          <Card className="hover:border-[var(--primary)]/30 transition-all">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-black tracking-tight">Activity Analytics</h3>
-                <p className="text-xs text-[var(--muted)] mt-0.5">Learning intensity over the last cycle</p>
-              </div>
-              <Badge className="bg-[var(--accent)] text-[var(--primary)] font-bold text-[10px] tracking-wider">NEURAL FEED</Badge>
+        {/* Chart + XP ring */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Activity chart */}
+          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-[var(--foreground)]">Activity</p>
+              <span className="text-[11px] text-[var(--muted)]">Last 7 days</span>
             </div>
-            <div className="h-52 w-full">
+            <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activity} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 10, fontWeight: 800 }} dy={8} />
+                <BarChart data={activity} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} />
                   <YAxis hide />
                   <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', color: 'var(--foreground)', fontSize: '11px' }}
-                    itemStyle={{ color: 'var(--primary)', fontWeight: 700 }}
-                    cursor={{ fill: 'var(--accent)', opacity: 0.5 }}
+                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', color: 'var(--foreground)' }}
+                    itemStyle={{ color: 'var(--primary)' }}
+                    cursor={{ fill: 'var(--accent)' }}
                   />
-                  <Bar dataKey="hours" fill="var(--primary)" radius={[6, 6, 3, 3]} />
+                  <Bar dataKey="hours" fill="var(--primary)" radius={[4, 4, 2, 2]} opacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
-        </div>
+          </div>
 
-        {/* XP Ring */}
-        <div className="col-span-12 lg:col-span-4">
-          <Card className="h-full flex flex-col items-center justify-center hover:border-[var(--primary)]/30 transition-all">
-            <div className="relative w-40 h-40 flex items-center justify-center mb-4">
-              <svg className="w-full h-full -rotate-90">
-                <circle cx="50%" cy="50%" r="42%" stroke="var(--border)" strokeWidth="14" fill="transparent" opacity="0.3" />
+          {/* XP ring */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center gap-3">
+            <div className="relative w-28 h-28">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="38" stroke="var(--border)" strokeWidth="8" fill="none" />
                 <motion.circle
-                  cx="50%" cy="50%" r="42%"
-                  stroke="var(--primary)" strokeWidth="14" fill="transparent"
-                  strokeDasharray="100 100"
-                  strokeDashoffset={100 - xpPercent}
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: stats.user.xp / stats.user.maxXp }}
-                  transition={{ duration: 1.5, ease: 'circOut' }}
+                  cx="50" cy="50" r="38"
+                  stroke="var(--primary)" strokeWidth="8" fill="none"
                   strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 38}`}
+                  strokeDashoffset={`${2 * Math.PI * 38 * (1 - xpPct / 100)}`}
+                  initial={{ strokeDashoffset: 2 * Math.PI * 38 }}
+                  animate={{ strokeDashoffset: 2 * Math.PI * 38 * (1 - xpPct / 100) }}
+                  transition={{ duration: 1.2, ease: 'circOut' }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-[var(--foreground)]">{xpPercent}%</span>
+                <span className="text-2xl font-bold text-[var(--foreground)]">{xpPct}%</span>
               </div>
             </div>
-            <p className="font-black text-sm text-[var(--foreground)] uppercase tracking-tight">Level {stats.user.level}</p>
-            <p className="text-xs text-[var(--muted)] mt-1">{stats.user.xp} / {stats.user.maxXp} XP</p>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-[var(--foreground)]">Level {stats.user.level}</p>
+              <p className="text-[11px] text-[var(--muted)]">{stats.user.xp}/{stats.user.maxXp} XP</p>
+            </div>
             <button
               onClick={() => router.push('/ai')}
-              className="mt-4 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-white"
+              className="text-[11px] font-semibold px-4 py-1.5 rounded-lg text-white transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Earn XP
             </button>
-          </Card>
+          </div>
         </div>
 
-        {/* Study Roadmap */}
-        <div className="col-span-12 lg:col-span-4">
-          <Card className="h-full hover:border-[var(--primary)]/30 transition-all">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-black tracking-tight">Study Roadmap</h3>
-              <button onClick={() => router.push('/planner')} className="text-xs font-bold text-[var(--primary)] hover:opacity-80">Full view</button>
+        {/* Tasks + Quick actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Study plans */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-[var(--foreground)]">Study Plans</p>
+              <button onClick={() => router.push('/planner')} className="text-[11px] text-[var(--primary)] font-medium hover:opacity-80">View all</button>
             </div>
-            <div className="space-y-3">
-              {tasks.slice(0, 4).map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)] hover:border-[var(--primary)]/40 transition-all">
-                  <div className="w-7 h-7 rounded-lg border-2 border-[var(--border)] flex items-center justify-center shrink-0">
-                    {task.completed && <CheckCircle2 className="w-4 h-4 text-[var(--primary)]" />}
+            <div className="space-y-2">
+              {tasks.slice(0, 4).map(task => (
+                <div key={task.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
+                  <div className={cn(
+                    'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all',
+                    task.completed ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border)]'
+                  )}>
+                    {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-bold text-[var(--foreground)] truncate">{task.title}</p>
-                    <p className="text-[10px] text-[var(--muted)] opacity-60">{task.category}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--foreground)] truncate">{task.title}</p>
+                    <p className="text-[11px] text-[var(--muted)]">{task.category}</p>
                   </div>
                 </div>
               ))}
               {tasks.length === 0 && (
-                <div className="py-8 text-center">
-                  <p className="text-xs text-[var(--muted)] opacity-50 mb-3">No study plans yet</p>
+                <div className="py-6 text-center">
+                  <p className="text-[12px] text-[var(--muted)] mb-3">No plans yet</p>
                   <button
                     onClick={() => router.push('/planner')}
-                    className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-bold text-white"
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg text-white"
                     style={{ backgroundColor: 'var(--primary)' }}
                   >
-                    <Plus className="w-3.5 h-3.5" /> Create Plan
+                    <Plus className="w-3.5 h-3.5" /> Create plan
                   </button>
                 </div>
               )}
             </div>
-          </Card>
-        </div>
+          </div>
 
-        {/* Quick Actions */}
-        <div className="col-span-12 lg:col-span-8">
-          <Card className="hover:border-[var(--primary)]/30 transition-all">
-            <h3 className="text-lg font-black tracking-tight mb-5">Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Quick actions */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+            <p className="text-sm font-semibold text-[var(--foreground)] mb-4">Quick Actions</p>
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'AI Tutor', sub: 'Start session', href: '/ai', color: 'bg-blue-500/10 text-blue-500' },
-                { label: 'Log GPA', sub: 'Add semester', href: '/gpa', color: 'bg-emerald-500/10 text-emerald-500' },
-                { label: 'Upload PDF', sub: 'Add course doc', href: '/courses', color: 'bg-purple-500/10 text-purple-500' },
-                { label: 'Research', sub: 'Scholar search', href: '/research', color: 'bg-orange-500/10 text-orange-500' },
-              ].map((action) => (
+                { label: 'AI Tutor',    sub: 'Start session',  href: '/ai',       color: '#6366f1' },
+                { label: 'Log GPA',     sub: 'Add semester',   href: '/gpa',      color: '#10b981' },
+                { label: 'Upload PDF',  sub: 'Add course doc', href: '/courses',  color: '#8b5cf6' },
+                { label: 'Research',    sub: 'Scholar search', href: '/research', color: 'var(--primary)' },
+              ].map(a => (
                 <button
-                  key={action.label}
-                  onClick={() => router.push(action.href)}
-                  className={cn(
-                    'p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)]/40 hover:shadow-md transition-all text-left',
-                    'bg-[var(--input)]'
-                  )}
+                  key={a.label}
+                  onClick={() => router.push(a.href)}
+                  className="p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/40 hover:bg-[var(--accent)] transition-all text-left group"
                 >
-                  <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', action.color)}>
-                    <Plus className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-lg mb-2.5 flex items-center justify-center" style={{ backgroundColor: `${a.color}18` }}>
+                    <Plus className="w-3.5 h-3.5" style={{ color: a.color }} />
                   </div>
-                  <p className="text-sm font-black text-[var(--foreground)]">{action.label}</p>
-                  <p className="text-[10px] text-[var(--muted)] opacity-60 mt-0.5">{action.sub}</p>
+                  <p className="text-[13px] font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">{a.label}</p>
+                  <p className="text-[11px] text-[var(--muted)] mt-0.5">{a.sub}</p>
                 </button>
               ))}
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

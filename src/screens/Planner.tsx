@@ -87,7 +87,7 @@ export const Planner = () => {
   if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" /></div>;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--background)] p-6 md:p-8 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[var(--background)] overflow-hidden overflow-hidden">
       <AnimatePresence>{showModal && <AddPlanModal onClose={() => setShowModal(false)} onSave={p => setPlans(prev => [p, ...prev])} />}</AnimatePresence>
 
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
