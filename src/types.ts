@@ -35,6 +35,8 @@ export interface Document {
   uploadedAt: string;
   size: string;
   category: string;
+  totalPages?: number;
+  scannedPages?: number;
 }
 
 export interface ResearchPaper {

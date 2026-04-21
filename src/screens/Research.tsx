@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Sparkles, ChevronDown, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { callEdgeFunction } from '../lib/supabase';
@@ -25,13 +25,14 @@ interface AIInsights {
 interface HistoryItem { id: string; title: string; abstract: string; year: number; }
 
 const SEARCH_MODES = [
+  { id: 'all', label: 'All', icon: Layers },
   { id: 'academic', label: 'Academic', icon: BookOpen },
   { id: 'projects', label: 'Projects', icon: Sparkles },
 ];
 
 export const Research = () => {
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'academic' | 'projects'>('academic');
+  const [mode, setMode] = useState<'all' | 'academic' | 'projects'>('all');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [insights, setInsights] = useState<AIInsights | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -42,6 +43,16 @@ export const Research = () => {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredResults = React.useMemo(() => {
+    return results.filter(r => {
+      const isGitHub = Boolean(r.isGitHub);
+      if (mode === 'all') return true;
+      if (mode === 'academic') return !isGitHub;
+      if (mode === 'projects') return isGitHub;
+      return false;
+    });
+  }, [results, mode]);
 
   useEffect(() => { loadHistory(); }, []);
 
@@ -193,12 +204,16 @@ export const Research = () => {
             )}
 
             {/* Search Results */}
-            {!searching && results.length > 0 && (
-              <AnimatePresence>
-                {results.map((r, i) => (
-                  <motion.div key={r.id || i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+            {!searching && filteredResults.length > 0 && (
+              <AnimatePresence mode="popLayout">
+                {filteredResults.map((r, i) => (
+                  <motion.div key={r.id || `res-${i}`}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
                     onClick={() => setSelected(r)}
-                    className={cn('bg-[var(--card)] border rounded-xl p-4 cursor-pointer transition-all hover:shadow-sm',
+                    className={cn('bg-[var(--card)] border rounded-xl p-4 cursor-pointer transition-all hover:shadow-sm mb-3',
                       selected?.id === r.id ? 'border-[var(--primary)]' : 'border-[var(--border)] hover:border-[var(--primary)]/40')}>
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <h3 className="text-[13px] font-semibold text-[var(--foreground)] leading-snug line-clamp-2">{r.title}</h3>

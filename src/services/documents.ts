@@ -8,10 +8,26 @@ export const getDocuments = async (): Promise<Document[]> => {
     name: pdf.file_name,
     uploadedAt: new Date(pdf.uploaded_at).toLocaleDateString(),
     size: pdf.file_size || '0KB',
-    category: 'General', // Backend doesn't seem to have category yet
+    category: 'General',
+    totalPages: pdf.total_pages || 0,
+    scannedPages: pdf.scanned_pages || 0,
   }));
 };
 
 export const deleteDocument = async (id: string): Promise<void> => {
   await api.delete(`/api/pdfs/${id}`);
+};
+
+export const scanDocument = async (id: string, pages: number = 2): Promise<Document> => {
+  const response = await api.post(`/api/pdfs/${id}/scan`, { pages });
+  const pdf = response.data;
+  return {
+    id: pdf.id,
+    name: pdf.file_name,
+    uploadedAt: new Date(pdf.uploaded_at).toLocaleDateString(),
+    size: pdf.file_size || '0KB',
+    category: 'General',
+    totalPages: pdf.total_pages || 0,
+    scannedPages: pdf.scanned_pages || 0,
+  };
 };
