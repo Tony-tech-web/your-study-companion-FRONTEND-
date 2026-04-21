@@ -1,12 +1,20 @@
 import api from './api';
 import { StudyPlan } from '../types';
 
+// Normalize subjects: backend may return strings or objects like {id,name,hours,deadline}
+const normalizeSubjects = (raw: any): string[] => {
+  const arr = Array.isArray(raw) ? raw : (() => { try { return JSON.parse(raw || '[]'); } catch { return []; } })();
+  return arr.map((s: any) =>
+    typeof s === 'string' ? s : (s?.name || s?.title || String(s) || 'Subject')
+  );
+};
+
 export const getStudyPlans = async (): Promise<StudyPlan[]> => {
   const response = await api.get('/api/study-plans');
   return response.data.map((plan: any) => ({
     id: plan.id,
     name: plan.name,
-    subjects: Array.isArray(plan.subjects) ? plan.subjects : JSON.parse(plan.subjects || '[]'),
+    subjects: normalizeSubjects(plan.subjects),
     progress: plan.progress || 0,
     totalHours: plan.total_hours || 0,
   }));
@@ -22,7 +30,7 @@ export const createStudyPlan = async (data: Partial<StudyPlan>): Promise<StudyPl
   return {
     id: plan.id,
     name: plan.name,
-    subjects: Array.isArray(plan.subjects) ? plan.subjects : JSON.parse(plan.subjects || '[]'),
+    subjects: normalizeSubjects(plan.subjects),
     progress: plan.progress || 0,
     totalHours: plan.total_hours || 0,
   };

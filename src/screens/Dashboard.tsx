@@ -91,8 +91,8 @@ export const Dashboard = () => {
               <p className="text-sm font-semibold text-[var(--foreground)]">Activity</p>
               <span className="text-[11px] text-[var(--muted)]">Last 7 days</span>
             </div>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-40" style={{ minHeight: 160 }}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={160}>
                 <BarChart data={activity} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} />

@@ -49,13 +49,22 @@ export const getUserStats = async (): Promise<User> => {
 
 export const getTasks = async (): Promise<Task[]> => {
   const response = await api.get('/api/study-plans');
-  return response.data.map((plan: any) => ({
-    id: plan.id,
-    title: plan.name,
-    dueDate: new Date(plan.created_at).toLocaleDateString(),
-    category: Array.isArray(plan.subjects) && plan.subjects.length > 0 ? plan.subjects[0] : 'General',
-    completed: false,
-  }));
+  return response.data.map((plan: any) => {
+    const subjects = Array.isArray(plan.subjects) ? plan.subjects : [];
+    const firstSubject = subjects[0];
+    const category = typeof firstSubject === 'string'
+      ? firstSubject
+      : typeof firstSubject === 'object' && firstSubject !== null
+        ? (firstSubject.name || firstSubject.title || 'General')
+        : 'General';
+    return {
+      id: plan.id,
+      title: plan.name,
+      dueDate: new Date(plan.created_at).toLocaleDateString(),
+      category,
+      completed: false,
+    };
+  });
 };
 
 export const getActivity = async (): Promise<StudyActivity[]> => {
