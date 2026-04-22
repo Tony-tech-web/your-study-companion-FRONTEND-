@@ -1,18 +1,20 @@
 'use client';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Send, Sparkles, Loader2, Trash2, Activity, ChevronDown, Check,
-         BookOpen, Brain, FlaskConical, X, FileText, Plus } from 'lucide-react';
+import {
+  Send, Sparkles, Loader2, Trash2, Activity, ChevronDown, Check,
+  BookOpen, Brain, FlaskConical, X, FileText, BookMarked,
+  Layers, ListChecks, AlignLeft, HelpCircle, ChevronRight,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { callEdgeFunction, supabase } from '../lib/supabase';
+import { callEdgeFunction, downloadStorageFile, updateXP } from '../lib/supabase';
+import { extractPdfText } from '../lib/pdfExtractor';
 import { getAIConversations, saveAIConversation, clearAIConversations, AIConversationEntry } from '../services/ai';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-// Strip model metadata tags
 const cleanText = (t: string) => t.replace(/\{\{[^}]+\}\}/g, '').trim();
 
-// Markdown renderer
 const renderMarkdown = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
@@ -41,86 +43,302 @@ const renderMarkdown = (text: string) => {
 };
 
 const MODELS = [
-  { id: 'google', label: 'Gemini Flash' },
-  { id: 'google-pro', label: 'Gemini Pro' },
-  { id: 'openrouter', label: 'GPT-4o (OpenRouter)' },
+  { id: 'google',       label: 'Gemini Flash (Default)' },
+  { id: 'google-pro',   label: 'Gemini Pro' },
+  { id: 'openrouter',   label: 'GPT-4o (OpenRouter)' },
 ];
 
 interface StudentPdf { id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string; }
-interface Provider { name: string; status: string; latency: string; is_backup: boolean; }
+interface ExtractedPdfState { pdfId: string; fileName: string; text: string; pageCount: number; extracting: boolean; error?: string; }
+type ChatMode = 'chat' | 'teach' | 'test';
+type StudyToolType = 'flashcards' | 'quiz' | 'notes' | 'summary';
 
-const StatusModal = ({ onClose }: { onClose: () => void }) => {
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    api.get('/api/model-health').then(r => setProviders(r.data.providers || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+interface Flashcard { front: string; back: string; }
+interface QuizQuestion { question: string; type: string; options: string[]; correct_answer: string; explanation: string; }
+
+// ─── Study Tools Panel ───────────────────────────────────────────────────────
+const StudyToolsPanel = ({ extractedPdfs, onClose }: { extractedPdfs: ExtractedPdfState[]; onClose: () => void }) => {
+  const [toolType, setToolType] = useState<StudyToolType>('flashcards');
+  const [generating, setGenerating] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [currentCard, setCurrentCard] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const readyPdfs = extractedPdfs.filter(p => !p.extracting && p.text && !p.error);
+  const pdfContent = readyPdfs.map(p => `=== ${p.fileName} ===\n${p.text}`).join('\n\n');
+
+  const tools = [
+    { id: 'flashcards' as StudyToolType, icon: Layers,    label: 'Flashcards', desc: 'Q&A cards' },
+    { id: 'quiz'       as StudyToolType, icon: ListChecks, label: 'Quiz',       desc: 'Multiple choice' },
+    { id: 'notes'      as StudyToolType, icon: AlignLeft,  label: 'Notes',      desc: 'Study summary' },
+    { id: 'summary'    as StudyToolType, icon: BookMarked, label: 'Summary',    desc: 'Key points' },
+  ];
+
+  const handleGenerate = async () => {
+    if (!pdfContent.trim()) { setError('No PDF content available. Select and extract a PDF first.'); return; }
+    setGenerating(true); setResult(null); setError(''); setCurrentCard(0); setFlipped(false); setAnswers({}); setSubmitted(false);
+    try {
+      const res = await callEdgeFunction('generate-study-tools', {
+        pdfContent: pdfContent.substring(0, 30000),
+        toolType,
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Generation failed'); }
+      const data = await res.json();
+      setResult(data.content);
+      await updateXP(toolType === 'quiz' ? 'quiz' : 'flashcard');
+    } catch (e: any) {
+      setError(e.message || 'Failed to generate');
+    } finally { setGenerating(false); }
+  };
+
+  const quizItems: QuizQuestion[] = Array.isArray(result) ? result : [];
+  const flashItems: Flashcard[] = Array.isArray(result) ? result : [];
+  const score = submitted ? quizItems.filter((q, i) => answers[i] === q.correct_answer).length : 0;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        onClick={e => e.stopPropagation()}
-        className="w-full max-w-md bg-(--card) border border-(--border) rounded-2xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-base font-bold text-(--foreground)">API Status</h2>
-            <p className="text-xs text-(--muted) mt-0.5">Live provider health — via Supabase Edge</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all">
-            <X className="w-4 h-4" />
-          </button>
+    <div className="flex flex-col h-full bg-[var(--card)] border-l border-[var(--border)] w-[380px] shrink-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)] shrink-0">
+        <p className="text-[13px] font-semibold text-[var(--foreground)]">Study Tools</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all"><X className="w-4 h-4" /></button>
+      </div>
+
+      {/* Tool type selector */}
+      <div className="p-3 border-b border-[var(--border)] shrink-0">
+        <div className="grid grid-cols-4 gap-1.5">
+          {tools.map(t => {
+            const Icon = t.icon;
+            return (
+              <button key={t.id} onClick={() => { setToolType(t.id); setResult(null); setError(''); }}
+                className={cn('flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-center',
+                  toolType === t.id ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]')}>
+                <Icon className="w-4 h-4" />
+                <span className="text-[10px] font-semibold">{t.label}</span>
+              </button>
+            );
+          })}
         </div>
-        {loading
-          ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>
-          : <div className="space-y-2">
-              {providers.map(p => (
-                <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
-                  <div className={cn('w-2 h-2 rounded-full shrink-0',
-                    p.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[var(--foreground)] truncate">{p.name}</p>
-                    <p className="text-[10px] text-[var(--muted)] opacity-60">{p.is_backup ? 'Backup' : 'Primary'} · {p.latency} latency</p>
-                  </div>
-                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md',
-                    p.status === 'connected' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500')}>
-                    {p.status === 'connected' ? 'Online' : 'No Key'}
-                  </span>
+
+        {/* PDF status */}
+        {readyPdfs.length > 0 ? (
+          <div className="mt-3 flex items-center gap-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <p className="text-[11px] text-emerald-600 font-medium">{readyPdfs.length} PDF{readyPdfs.length > 1 ? 's' : ''} ready</p>
+          </div>
+        ) : (
+          <div className="mt-3 p-2 bg-[var(--input)] border border-[var(--border)] rounded-xl">
+            <p className="text-[11px] text-[var(--muted)] opacity-60 text-center">Select PDFs from Library panel and extract text first</p>
+          </div>
+        )}
+
+        {error && <p className="mt-2 text-[11px] text-red-500 bg-red-500/10 rounded-xl p-2">{error}</p>}
+
+        <button onClick={handleGenerate} disabled={generating || readyPdfs.length === 0}
+          className="mt-3 w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
+          style={{ backgroundColor: 'var(--primary)' }}>
+          {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : `Generate ${tools.find(t => t.id === toolType)?.label}`}
+        </button>
+      </div>
+
+      {/* Results */}
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-3">
+        {generating && (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
+            <p className="text-xs text-[var(--muted)]">AI is generating your {toolType}...</p>
+          </div>
+        )}
+
+        {/* Flashcards */}
+        {!generating && toolType === 'flashcards' && flashItems.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] font-semibold text-[var(--foreground)]">{currentCard + 1} / {flashItems.length}</p>
+              <div className="flex gap-1.5">
+                <button disabled={currentCard === 0} onClick={() => { setCurrentCard(c => c - 1); setFlipped(false); }}
+                  className="w-7 h-7 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--muted)] disabled:opacity-30 hover:bg-[var(--accent)] transition-all">
+                  <ChevronRight className="w-3.5 h-3.5 rotate-180" />
+                </button>
+                <button disabled={currentCard === flashItems.length - 1} onClick={() => { setCurrentCard(c => c + 1); setFlipped(false); }}
+                  className="w-7 h-7 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--muted)] disabled:opacity-30 hover:bg-[var(--accent)] transition-all">
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="cursor-pointer" onClick={() => setFlipped(f => !f)}>
+              <motion.div animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: 0.3 }} style={{ transformStyle: 'preserve-3d' }} className="relative h-44">
+                <div className="absolute inset-0 bg-[var(--primary)] rounded-2xl p-5 flex flex-col items-center justify-center text-center" style={{ backfaceVisibility: 'hidden' }}>
+                  <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-2">Question</p>
+                  <p className="text-sm font-semibold text-white leading-snug">{flashItems[currentCard]?.front}</p>
+                  <p className="text-[10px] text-white/50 mt-3">Tap to reveal</p>
                 </div>
+                <div className="absolute inset-0 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 flex flex-col items-center justify-center text-center" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                  <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest mb-2">Answer</p>
+                  <p className="text-sm text-[var(--foreground)] leading-snug">{flashItems[currentCard]?.back}</p>
+                </div>
+              </motion.div>
+            </div>
+            <div className="flex justify-center gap-1.5">
+              {flashItems.map((_, i) => (
+                <div key={i} className={cn('h-1 rounded-full transition-all', i === currentCard ? 'w-4 bg-[var(--primary)]' : 'w-1.5 bg-[var(--border)]')} />
               ))}
-              <p className="text-[11px] text-center text-[var(--muted)] opacity-50 pt-1">
-                AI calls route through Supabase Edge
-              </p>
-            </div>}
-      </motion.div>
+            </div>
+          </div>
+        )}
+
+        {/* Quiz */}
+        {!generating && toolType === 'quiz' && quizItems.length > 0 && (
+          <div className="space-y-4">
+            {submitted && (
+              <div className="p-4 bg-[var(--primary)]/10 border border-[var(--primary)]/20 rounded-xl text-center">
+                <p className="text-2xl font-bold text-[var(--primary)]">{score}/{quizItems.length}</p>
+                <p className="text-[12px] text-[var(--muted)] mt-1">
+                  {score === quizItems.length ? 'Perfect score!' : score >= quizItems.length * 0.7 ? 'Great work!' : 'Keep studying!'}
+                </p>
+                <button onClick={() => { setAnswers({}); setSubmitted(false); }} className="mt-2 text-[11px] text-[var(--primary)] font-semibold hover:opacity-80">Retry</button>
+              </div>
+            )}
+            {quizItems.map((q, qi) => (
+              <div key={qi} className="bg-[var(--input)] border border-[var(--border)] rounded-xl p-4">
+                <p className="text-[13px] font-semibold text-[var(--foreground)] mb-3">{qi + 1}. {q.question}</p>
+                <div className="space-y-2">
+                  {(q.options || []).map((opt, oi) => {
+                    const isSelected = answers[qi] === opt;
+                    const isCorrect = opt === q.correct_answer;
+                    const showResult = submitted;
+                    return (
+                      <button key={oi} onClick={() => !submitted && setAnswers(prev => ({ ...prev, [qi]: opt }))}
+                        className={cn('w-full text-left px-3 py-2 rounded-xl text-[12px] font-medium transition-all border',
+                          showResult && isCorrect ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600' :
+                          showResult && isSelected && !isCorrect ? 'bg-red-500/15 border-red-500/40 text-red-500' :
+                          isSelected ? 'bg-[var(--primary)]/15 border-[var(--primary)]/40 text-[var(--primary)]' :
+                          'bg-[var(--card)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--primary)]/30 hover:text-[var(--foreground)]')}>
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                {submitted && q.explanation && (
+                  <p className="mt-2 text-[11px] text-[var(--muted)] italic">{q.explanation}</p>
+                )}
+              </div>
+            ))}
+            {!submitted && (
+              <button onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length < quizItems.length}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 hover:opacity-90 transition-all"
+                style={{ backgroundColor: 'var(--primary)' }}>
+                Submit ({Object.keys(answers).length}/{quizItems.length} answered)
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Notes / Summary */}
+        {!generating && (toolType === 'notes' || toolType === 'summary') && result && typeof result === 'string' && (
+          <div className="bg-[var(--input)] border border-[var(--border)] rounded-xl p-4">
+            <div className="prose prose-sm max-w-none space-y-1">
+              {renderMarkdown(result)}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-type ChatMode = 'chat' | 'teach' | 'test';
-
-const modeConfig = {
-  chat:  { icon: Sparkles,    label: 'Chat',  color: 'var(--primary)', desc: 'Ask Orbit anything' },
-  teach: { icon: Brain,       label: 'Teach', color: '#6366f1',        desc: 'Learn from selected PDFs' },
-  test:  { icon: FlaskConical,label: 'Test',  color: '#10b981',        desc: 'Quiz yourself on content' },
+// ─── PDF Library Sidebar ──────────────────────────────────────────────────────
+const LibraryPanel = ({
+  pdfs, extractedPdfs, selectedPdfIds, onTogglePdf, onClose, onExtract
+}: {
+  pdfs: StudentPdf[];
+  extractedPdfs: ExtractedPdfState[];
+  selectedPdfIds: string[];
+  onTogglePdf: (id: string) => void;
+  onClose: () => void;
+  onExtract: (pdf: StudentPdf) => void;
+}) => {
+  return (
+    <div className="flex flex-col h-full bg-[var(--card)] border-r border-[var(--border)] w-[260px] shrink-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)] shrink-0">
+        <p className="text-[13px] font-semibold text-[var(--foreground)]">PDF Library</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all"><X className="w-4 h-4" /></button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
+        {pdfs.length === 0 && (
+          <div className="py-10 text-center">
+            <FileText className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
+            <p className="text-xs text-[var(--muted)] opacity-40">No PDFs. Upload from Courses.</p>
+          </div>
+        )}
+        {pdfs.map(pdf => {
+          const selected = selectedPdfIds.includes(pdf.id);
+          const extracted = extractedPdfs.find(e => e.pdfId === pdf.id);
+          return (
+            <div key={pdf.id}
+              className={cn('rounded-xl border transition-all p-3',
+                selected ? 'bg-[var(--primary)]/10 border-[var(--primary)]/40' : 'border-[var(--border)] bg-[var(--input)]')}>
+              <div className="flex items-start gap-2.5">
+                <button onClick={() => onTogglePdf(pdf.id)} className={cn('w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+                  selected ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border)]')}>
+                  {selected && <Check className="w-3 h-3 text-white" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-[var(--foreground)] truncate">{pdf.file_name}</p>
+                  {extracted && !extracted.extracting && !extracted.error && (
+                    <p className="text-[10px] text-emerald-500 mt-0.5">{extracted.pageCount} pages extracted</p>
+                  )}
+                  {extracted?.extracting && (
+                    <p className="text-[10px] text-[var(--primary)] mt-0.5 flex items-center gap-1"><Loader2 className="w-2.5 h-2.5 animate-spin" /> Extracting...</p>
+                  )}
+                  {extracted?.error && <p className="text-[10px] text-red-500 mt-0.5">{extracted.error}</p>}
+                </div>
+              </div>
+              {selected && !extracted && (
+                <button onClick={() => onExtract(pdf)}
+                  className="mt-2 w-full text-[10px] font-semibold py-1.5 rounded-lg text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: 'var(--primary)' }}>
+                  Extract Text
+                </button>
+              )}
+              {selected && extracted && !extracted.extracting && !extracted.error && (
+                <div className="mt-2 p-2 bg-[var(--card)] rounded-lg border border-[var(--border)]">
+                  <p className="text-[10px] text-[var(--muted)] line-clamp-2">{extracted.text.slice(0, 120)}...</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {selectedPdfIds.length > 0 && (
+        <div className="p-3 border-t border-[var(--border)] shrink-0">
+          <p className="text-[11px] text-center text-[var(--muted)]">
+            {selectedPdfIds.length} PDF{selectedPdfIds.length > 1 ? 's' : ''} selected as context
+          </p>
+        </div>
+      )}
+    </div>
+  );
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export const AIAssistant = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIConversationEntry[]>([]);
-  const [pdfs, setPdfs] = useState<Document[]>([]);
-  const [selectedPDFs, setSelectedPDFs] = useState<string[]>([]);
-  const [isReady, setIsReady] = useState(false);
-  const [showPDFPicker, setShowPDFPicker] = useState(false);
   const [streamingMsg, setStreamingMsg] = useState('');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [showStatus, setShowStatus] = useState(false);
   const [model, setModel] = useState('google');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [mode, setMode] = useState<ChatMode>('chat');
   const [pdfs, setPdfs] = useState<StudentPdf[]>([]);
   const [selectedPdfIds, setSelectedPdfIds] = useState<string[]>([]);
+  const [extractedPdfs, setExtractedPdfs] = useState<ExtractedPdfState[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showStudyTools, setShowStudyTools] = useState(false);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchHistory(); fetchPdfs(); }, []);
@@ -131,7 +349,7 @@ export const AIAssistant = () => {
       const history = await getAIConversations();
       setMessages(history.length === 0 ? [{
         id: 'initial', role: 'assistant',
-        content: "Neural Link established. I'm Orbit, your academic AI. How can I help you today?",
+        content: "Neural Link established. I'm Orbit, your academic AI.\n\nSelect a **mode** below:\n- **Chat** — ask me anything\n- **Teach** — I'll tutor you from your PDFs\n- **Test** — I'll quiz you on your material\n\nUse the **Library** button to attach PDFs and **Study Tools** to generate flashcards, quizzes, and notes.",
         created_at: new Date().toISOString()
       }] : history);
     } catch (err) { console.error(err); }
@@ -139,17 +357,53 @@ export const AIAssistant = () => {
   };
 
   const fetchPdfs = async () => {
-    try {
-      const res = await api.get('/api/pdfs');
-      setPdfs(res.data);
-    } catch {}
+    try { const res = await api.get('/api/pdfs'); setPdfs(res.data); } catch {}
   };
 
-  const selectedPdfs = useMemo(() => pdfs.filter(p => selectedPdfIds.includes(p.id)), [pdfs, selectedPdfIds]);
+  const handleExtractPdf = async (pdf: StudentPdf) => {
+    setExtractedPdfs(prev => {
+      const existing = prev.find(e => e.pdfId === pdf.id);
+      if (existing) return prev;
+      return [...prev, { pdfId: pdf.id, fileName: pdf.file_name, text: '', pageCount: 0, extracting: true }];
+    });
+
+    try {
+      const arrayBuffer = await downloadStorageFile('student-pdfs', pdf.file_path);
+      const extracted = await extractPdfText(arrayBuffer, (current, total) => {
+        setScanProgress({ current, total });
+      });
+      setScanProgress(null);
+      setExtractedPdfs(prev => prev.map(e =>
+        e.pdfId === pdf.id ? { ...e, text: extracted.text, pageCount: extracted.pageCount, extracting: false } : e
+      ));
+    } catch (err: any) {
+      setScanProgress(null);
+      setExtractedPdfs(prev => prev.map(e =>
+        e.pdfId === pdf.id ? { ...e, extracting: false, error: err.message || 'Extraction failed' } : e
+      ));
+    }
+  };
 
   const togglePdf = (id: string) => {
     setSelectedPdfIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    // Auto-extract if selecting
+    if (!selectedPdfIds.includes(id)) {
+      const pdf = pdfs.find(p => p.id === id);
+      if (pdf && !extractedPdfs.find(e => e.pdfId === id)) {
+        handleExtractPdf(pdf);
+      }
+    }
   };
+
+  const pdfContext = useMemo(() => {
+    const ready = extractedPdfs.filter(e => selectedPdfIds.includes(e.pdfId) && e.text && !e.extracting);
+    return ready.map(e => `=== ${e.fileName} ===\n${e.text}`).join('\n\n');
+  }, [extractedPdfs, selectedPdfIds]);
+
+  const extractedForTools = useMemo(() =>
+    extractedPdfs.filter(e => selectedPdfIds.includes(e.pdfId)),
+    [extractedPdfs, selectedPdfIds]
+  );
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -158,40 +412,26 @@ export const AIAssistant = () => {
     setIsLoading(true);
     setStreamingMsg('');
 
-    if (!user?.id) {
-      setIsLoading(false);
-      alert('You must be logged in to use the AI assistant.');
-      return;
-    }
-
     try {
       const userMsg = await saveAIConversation('user', userInput);
       setMessages(prev => [...prev, userMsg]);
 
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+      const activeScan = extractedPdfs.find(e => selectedPdfIds.includes(e.pdfId) && e.extracting);
 
-      // Build pdfContext from selected PDFs
-      const pdfContext = selectedPdfs.length > 0
-        ? selectedPdfs.map(p => `File: ${p.file_name} (path: ${p.file_path})`).join('\n')
-        : undefined;
-
-      // Call Supabase edge function — MUST include userId
       const res = await callEdgeFunction('ai-chat', {
-        user_id: user?.id,
-        message: userInput,
         messages: [...history, { role: 'user', content: userInput }],
         providerId: model,
-        userId: user.id,           // REQUIRED by edge function
         mode,
         ...(pdfContext ? { pdfContext } : {}),
+        ...(activeScan ? { scanProgress: { current: scanProgress?.current || 0, total: scanProgress?.total || 0 } } : {}),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'AI request failed' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || 'AI request failed');
       }
 
-      // Handle streaming response
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('text/event-stream')) {
         const reader = res.body?.getReader();
@@ -202,8 +442,7 @@ export const AIAssistant = () => {
             const { done, value } = await reader.read();
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-            for (const line of lines) {
+            for (const line of chunk.split('\n').filter(l => l.startsWith('data: '))) {
               const data = line.slice(6).trim();
               if (data === '[DONE]') break;
               try {
@@ -220,13 +459,15 @@ export const AIAssistant = () => {
         const assistantMsg = await saveAIConversation('assistant', finalText);
         setMessages(prev => [...prev, assistantMsg]);
       } else {
-        // Non-streaming JSON response
         const data = await res.json();
         const reply = cleanText(data.text || data.reply || data.message || 'No response.');
         setStreamingMsg('');
         const assistantMsg = await saveAIConversation('assistant', reply);
         setMessages(prev => [...prev, assistantMsg]);
       }
+
+      // Award XP for AI chat
+      await updateXP('ai_chat');
     } catch (error: any) {
       console.error('AI Error:', error);
       const errText = `Error: ${error.message || 'Neural link failed.'}`;
@@ -235,9 +476,7 @@ export const AIAssistant = () => {
         id: Date.now().toString(), role: 'assistant' as const, content: errText, created_at: new Date().toISOString()
       }));
       setMessages(prev => [...prev, errMsg]);
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
   const handleClear = async () => {
@@ -248,77 +487,37 @@ export const AIAssistant = () => {
     } catch { alert('Failed to clear'); }
   };
 
+  const modeConfig = {
+    chat:  { icon: Sparkles,     label: 'Chat',  color: 'var(--primary)', placeholder: 'Ask Orbit anything...' },
+    teach: { icon: Brain,        label: 'Teach', color: '#6366f1',        placeholder: 'What should I explain from your PDFs?' },
+    test:  { icon: FlaskConical, label: 'Test',  color: '#10b981',        placeholder: 'Ready? I\'ll quiz you on your material.' },
+  };
+  const currentMode = modeConfig[mode];
   const currentModel = MODELS.find(m => m.id === model) || MODELS[0];
-  const ModeIcon = modeConfig[mode].icon;
 
   if (isFetching) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>;
 
   return (
     <div className="flex-1 flex bg-[var(--background)] text-[var(--foreground)] h-full overflow-hidden">
-      <AnimatePresence>{showStatus && <StatusModal onClose={() => setShowStatus(false)} />}</AnimatePresence>
-
-      {/* PDF Library Sidebar */}
+      {/* Library sidebar */}
       <AnimatePresence>
         {showLibrary && (
-          <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 260, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-            className="flex flex-col h-full bg-[var(--card)] border-r border-[var(--border)] overflow-hidden shrink-0">
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
-              <p className="text-[13px] font-semibold text-[var(--foreground)]">PDF Library</p>
-              <button onClick={() => setShowLibrary(false)} className="p-1 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-              {pdfs.length === 0 && (
-                <div className="py-8 text-center">
-                  <FileText className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
-                  <p className="text-xs text-[var(--muted)] opacity-40">No PDFs uploaded yet</p>
-                  <p className="text-[11px] text-[var(--muted)] opacity-30 mt-1">Upload from Courses page</p>
-                </div>
-              )}
-              {pdfs.map(pdf => {
-                const selected = selectedPdfIds.includes(pdf.id);
-                return (
-                  <button key={pdf.id} onClick={() => togglePdf(pdf.id)}
-                    className={cn('w-full flex items-center gap-2.5 p-3 rounded-xl text-left transition-all border',
-                      selected
-                        ? 'bg-[var(--primary)]/10 border-[var(--primary)]/40 text-[var(--foreground)]'
-                        : 'border-transparent hover:bg-[var(--accent)] text-[var(--muted)]')}>
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                      selected ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] text-[var(--muted)]')}>
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium truncate" style={{ color: selected ? 'var(--foreground)' : undefined }}>
-                        {pdf.file_name}
-                      </p>
-                      <p className="text-[10px] opacity-50">{pdf.file_size ? `${Math.round(pdf.file_size / 1024)} KB` : 'Unknown size'}</p>
-                    </div>
-                    {selected && <Check className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-            {selectedPdfIds.length > 0 && (
-              <div className="p-3 border-t border-[var(--border)]">
-                <p className="text-[11px] text-[var(--muted)] text-center">{selectedPdfIds.length} PDF{selectedPdfIds.length > 1 ? 's' : ''} selected as context</p>
-              </div>
-            )}
+          <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 260, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+            <LibraryPanel pdfs={pdfs} extractedPdfs={extractedPdfs} selectedPdfIds={selectedPdfIds}
+              onTogglePdf={togglePdf} onClose={() => setShowLibrary(false)} onExtract={handleExtractPdf} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main chat area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      {/* Main chat */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
         {/* Header */}
         <header className="px-5 py-3.5 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-base font-bold text-[var(--foreground)] tracking-tight">Orbit AI</h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-medium text-[var(--muted)] uppercase tracking-wider">Neural Link Active</span>
-              </div>
+          <div>
+            <h1 className="text-base font-bold text-[var(--foreground)] tracking-tight">Orbit AI</h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-medium text-[var(--muted)] uppercase tracking-wider">Neural Link Active</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -326,8 +525,7 @@ export const AIAssistant = () => {
             <div className="relative">
               <button onClick={() => setShowModelPicker(v => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[12px] font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--primary)]/50 transition-all">
-                {currentModel.label}
-                <ChevronDown className="w-3 h-3" />
+                {currentModel.label} <ChevronDown className="w-3 h-3" />
               </button>
               <AnimatePresence>
                 {showModelPicker && (
@@ -344,17 +542,30 @@ export const AIAssistant = () => {
                 )}
               </AnimatePresence>
             </div>
-            <button onClick={() => setShowStatus(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[12px] font-medium text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)]/50 transition-all">
-              <Activity className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Status</span>
-            </button>
             <button onClick={handleClear}
               className="p-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-red-500 hover:border-red-500/30 transition-all">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </header>
+
+        {/* Scan progress bar */}
+        <AnimatePresence>
+          {scanProgress && (
+            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+              className="overflow-hidden shrink-0">
+              <div className="px-5 py-2 bg-[var(--primary)]/10 border-b border-[var(--primary)]/20 flex items-center gap-3">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--primary)] shrink-0" />
+                <div className="flex-1">
+                  <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                    <motion.div className="h-full bg-[var(--primary)] rounded-full" style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }} />
+                  </div>
+                </div>
+                <span className="text-[11px] text-[var(--primary)] font-medium shrink-0">Scanning page {scanProgress.current}/{scanProgress.total}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -367,9 +578,7 @@ export const AIAssistant = () => {
                   className={cn('flex gap-3', msg.role === 'user' ? 'flex-row-reverse' : '')}>
                   <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
                     msg.role === 'user' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--primary)]')}>
-                    {msg.role === 'user'
-                      ? <div className="w-3 h-3 rounded-md border-2 border-white/80" />
-                      : <Sparkles className="w-3.5 h-3.5" />}
+                    {msg.role === 'user' ? <div className="w-3 h-3 rounded-md border-2 border-white/80" /> : <Sparkles className="w-3.5 h-3.5" />}
                   </div>
                   <div className={cn('px-4 py-3 rounded-2xl max-w-[85%] shadow-sm',
                     msg.role === 'user'
@@ -413,7 +622,6 @@ export const AIAssistant = () => {
 
         {/* Bottom controls */}
         <div className="absolute bottom-0 left-0 right-0 z-20">
-          {/* Mode + library row */}
           <div className="max-w-3xl mx-auto px-4 pb-2 flex items-center justify-between gap-2">
             {/* Mode tabs */}
             <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1">
@@ -432,40 +640,62 @@ export const AIAssistant = () => {
               })}
             </div>
 
-            {/* Library button */}
-            <button onClick={() => setShowLibrary(v => !v)}
-              className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-medium transition-all',
-                showLibrary || selectedPdfIds.length > 0
-                  ? 'bg-[var(--primary)]/10 border-[var(--primary)]/40 text-[var(--primary)]'
-                  : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
-              <BookOpen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Library</span>
-              {selectedPdfIds.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[var(--primary)] text-white text-[10px] flex items-center justify-center font-bold">
-                  {selectedPdfIds.length}
-                </span>
-              )}
-            </button>
+            {/* Right buttons */}
+            <div className="flex items-center gap-2">
+              {/* Library */}
+              <button onClick={() => setShowLibrary(v => !v)}
+                className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-medium transition-all',
+                  showLibrary || selectedPdfIds.length > 0
+                    ? 'bg-[var(--primary)]/10 border-[var(--primary)]/40 text-[var(--primary)]'
+                    : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Library</span>
+                {selectedPdfIds.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-[var(--primary)] text-white text-[10px] flex items-center justify-center font-bold">{selectedPdfIds.length}</span>
+                )}
+              </button>
+
+              {/* Study Tools */}
+              <button onClick={() => setShowStudyTools(v => !v)}
+                className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-medium transition-all',
+                  showStudyTools
+                    ? 'bg-[#6366f1]/10 border-[#6366f1]/40 text-[#6366f1]'
+                    : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
+                <Layers className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Study Tools</span>
+              </button>
+            </div>
           </div>
 
-          {/* Input bar */}
-          <div className="max-w-3xl mx-auto px-4 pb-5 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent pt-1">
-            {/* Context indicator */}
-            {selectedPdfs.length > 0 && (
-              <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
-                {selectedPdfs.map(p => (
-                  <span key={p.id} className="flex items-center gap-1.5 text-[11px] font-medium bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-1 rounded-lg border border-[var(--primary)]/20">
-                    <FileText className="w-3 h-3" />
-                    {p.file_name.slice(0, 20)}{p.file_name.length > 20 ? '...' : ''}
-                    <button onClick={() => togglePdf(p.id)} className="hover:opacity-70"><X className="w-3 h-3" /></button>
-                  </span>
-                ))}
+          {/* PDF context pills */}
+          {selectedPdfIds.length > 0 && (
+            <div className="max-w-3xl mx-auto px-4 pb-2">
+              <div className="flex flex-wrap gap-1.5">
+                {selectedPdfIds.map(id => {
+                  const pdf = pdfs.find(p => p.id === id);
+                  const extracted = extractedPdfs.find(e => e.pdfId === id);
+                  return pdf ? (
+                    <span key={id} className={cn('flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-lg border',
+                      extracted?.extracting ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' :
+                      extracted?.text ? 'bg-[var(--primary)]/10 border-[var(--primary)]/20 text-[var(--primary)]' :
+                      'bg-[var(--input)] border-[var(--border)] text-[var(--muted)]')}>
+                      <FileText className="w-3 h-3" />
+                      {pdf.file_name.slice(0, 18)}{pdf.file_name.length > 18 ? '...' : ''}
+                      {extracted?.extracting && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                      <button onClick={() => togglePdf(id)} className="hover:opacity-70"><X className="w-2.5 h-2.5" /></button>
+                    </span>
+                  ) : null;
+                })}
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="max-w-3xl mx-auto px-4 pb-5 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent pt-1">
             <div className="flex items-center gap-2.5 bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-2.5 shadow-lg focus-within:border-[var(--primary)] transition-all">
               <input value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder={modeConfig[mode].desc}
+                placeholder={currentMode.placeholder}
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-50" />
               <button onClick={handleSend} disabled={isLoading || !input.trim()}
                 className="w-8 h-8 bg-[var(--primary)] text-white rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
@@ -476,6 +706,15 @@ export const AIAssistant = () => {
           </div>
         </div>
       </div>
+
+      {/* Study Tools panel */}
+      <AnimatePresence>
+        {showStudyTools && (
+          <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 380, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+            <StudyToolsPanel extractedPdfs={extractedForTools} onClose={() => setShowStudyTools(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

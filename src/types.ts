@@ -66,12 +66,14 @@ export interface GPARecord {
 
 export interface LeaderboardEntry {
   id: string;
+  user_id: string;
   rank: number;
   name: string;
   level: number;
   xp: number;
   avatar: string;
   student_id: string;
+  title?: string;
   weeklyGain?: number;
 }
 

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Sparkles, GraduationCap, Calendar,
   BookOpen, Search, MessageSquare, Newspaper, Trophy,
   Moon, Sun, Coffee, LogOut, ChevronLeft, ChevronRight,
-  Menu
+  Menu, Activity, X, Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTheme } from 'next-themes';
@@ -26,8 +26,51 @@ const navItems = [
 
 const STORAGE_KEY = 'orbit-sidebar-collapsed';
 
+// API Status Modal — global, used in sidebar
+const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
+  const [providers, setProviders] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    import('../services/api').then(({ default: api }) => {
+      api.get('/api/model-health').then((r: any) => setProviders(r.data.providers || [])).catch(() => {}).finally(() => setLoading(false));
+    });
+  }, []);
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-base font-bold text-[var(--foreground)]">API Status</h2>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Live provider health — Supabase Edge</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all"><X className="w-4 h-4" /></button>
+        </div>
+        {loading
+          ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>
+          : <div className="space-y-2">
+              {providers.map((p: any) => (
+                <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
+                  <div className={cn('w-2 h-2 rounded-full shrink-0', p.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--foreground)] truncate">{p.name}</p>
+                    <p className="text-[10px] text-[var(--muted)] opacity-60">{p.is_backup ? 'Backup' : 'Primary'} · {p.latency} latency</p>
+                  </div>
+                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md', p.status === 'connected' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500')}>
+                    {p.status === 'connected' ? 'Online' : 'No Key'}
+                  </span>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+    </div>
+  );
+};
+
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [showStatus, setShowStatus] = React.useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const { user, signOut } = useAuth();
@@ -56,6 +99,8 @@ export const Sidebar = () => {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
+    <>
+    {showStatus && <APIStatusModal onClose={() => setShowStatus(false)} />}
     <aside
       className={cn(
         'hidden lg:flex flex-col h-screen shrink-0 border-r border-[var(--border)]',
@@ -154,6 +199,17 @@ export const Sidebar = () => {
           ))}
         </div>
 
+        {/* API Status button */}
+        <button
+          onClick={() => setShowStatus(true)}
+          title="API Status"
+          className={cn('flex items-center justify-center rounded-lg transition-all duration-150 text-[var(--muted)] hover:text-[var(--primary)] hover:bg-[var(--accent)]',
+            collapsed ? 'w-9 h-7' : 'h-7 w-full gap-2'
+          )}>
+          <Activity className="w-3.5 h-3.5" />
+          {!collapsed && <span className="text-[11px] font-medium">API Status</span>}
+        </button>
+
         {/* User row */}
         <div className={cn(
           'flex items-center gap-2 rounded-lg px-1.5 py-1.5 mt-1',
@@ -179,6 +235,7 @@ export const Sidebar = () => {
         </div>
       </div>
     </aside>
+  </>
   );
 };
 

@@ -13,6 +13,7 @@ export async function callEdgeFunction(
 ): Promise<Response> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
+  if (!token) throw new Error('No active session. Please sign in.');
 
   const url = `${supabaseUrl}/functions/v1/${name}`;
   return fetch(url, {
@@ -24,4 +25,27 @@ export async function callEdgeFunction(
     },
     body: JSON.stringify(body),
   });
+}
+
+// Get a signed URL for a private storage file
+export async function getStorageUrl(bucket: string, path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+  if (error || !data?.signedUrl) throw new Error(error?.message || 'Failed to get file URL');
+  return data.signedUrl;
+}
+
+// Download a file from storage as ArrayBuffer
+export async function downloadStorageFile(bucket: string, path: string): Promise<ArrayBuffer> {
+  const { data, error } = await supabase.storage.from(bucket).download(path);
+  if (error || !data) throw new Error(error?.message || 'Failed to download file');
+  return data.arrayBuffer();
+}
+
+// Update XP via Supabase edge function
+export async function updateXP(activityType: string, incrementValue = 1) {
+  try {
+    await callEdgeFunction('update-user-stats', { activityType, incrementValue });
+  } catch (e) {
+    console.error('XP update failed:', e);
+  }
 }
