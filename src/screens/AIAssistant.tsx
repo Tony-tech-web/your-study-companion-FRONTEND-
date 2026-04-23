@@ -43,9 +43,10 @@ const renderMarkdown = (text: string) => {
 };
 
 const MODELS = [
-  { id: 'google',       label: 'Gemini Flash (Default)' },
-  { id: 'google-pro',   label: 'Gemini Pro' },
-  { id: 'openrouter',   label: 'GPT-4o (OpenRouter)' },
+  { id: 'gemini-flash',   label: 'Gemini Flash (Default)' },
+  { id: 'gpt-4o',         label: 'GPT-4o' },
+  { id: 'gpt-4o-mini',    label: 'GPT-4o Mini' },
+  { id: 'openrouter-gpt4', label: 'GPT-4o (OpenRouter)' },
 ];
 
 interface StudentPdf { id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string; }
@@ -341,7 +342,7 @@ export const AIAssistant = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [model, setModel] = useState('google');
+  const [model, setModel] = useState('gemini-flash');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [mode, setMode] = useState<ChatMode>('chat');
   const [pdfs, setPdfs] = useState<StudentPdf[]>([]);
@@ -723,9 +724,10 @@ export const AIAssistant = () => {
           </div>
         </div>
 
-        {/* Bottom controls */}
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <div className="max-w-3xl mx-auto px-4 pb-2 flex items-center justify-between gap-2">
+        {/* Bottom controls — backdrop blur so messages slide under cleanly */}
+        <div className="absolute bottom-0 left-0 right-0 z-20"
+          style={{ backdropFilter: 'blur(12px)', background: 'linear-gradient(to top, var(--background) 60%, transparent)' }}>
+          <div className="max-w-3xl mx-auto px-4 pt-2 pb-2 flex items-center justify-between gap-2">
             {/* Mode tabs */}
             <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1">
               {(Object.entries(modeConfig) as [ChatMode, typeof modeConfig.chat][]).map(([key, cfg]) => {
