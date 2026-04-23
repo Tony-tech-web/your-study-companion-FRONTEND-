@@ -571,8 +571,8 @@ export const AIAssistant = () => {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-3xl mx-auto px-4 py-5 space-y-5 pb-36">
             <AnimatePresence initial={false}>
-              {messages.map(msg => (
-                <motion.div key={msg.id}
+              {messages.map((msg, i) => (
+                <motion.div key={msg.id || i}
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', damping: 24, stiffness: 140 }}
                   className={cn('flex gap-3', msg.role === 'user' ? 'flex-row-reverse' : '')}>
