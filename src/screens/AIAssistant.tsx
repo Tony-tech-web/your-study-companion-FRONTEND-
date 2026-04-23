@@ -49,7 +49,18 @@ const MODELS = [
 ];
 
 interface StudentPdf { id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string; }
-interface ExtractedPdfState { pdfId: string; fileName: string; text: string; pageCount: number; extracting: boolean; error?: string; }
+interface ExtractedPdfState { pdfId: string; fileName: string; text: string; pages: string[]; pageCount: number; extracting: boolean; error?: string; }
+
+const BATCH_SIZE = 5;
+
+interface TeachSession {
+  pdfId: string;
+  fileName: string;
+  pages: string[];
+  totalPages: number;
+  currentBatch: number; // 0-indexed
+  finished: boolean;
+}
 type ChatMode = 'chat' | 'teach' | 'test';
 type StudyToolType = 'flashcards' | 'quiz' | 'notes' | 'summary';
 
@@ -339,6 +350,7 @@ export const AIAssistant = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showStudyTools, setShowStudyTools] = useState(false);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
+  const [teachSession, setTeachSession] = useState<TeachSession | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchHistory(); fetchPdfs(); }, []);
@@ -364,7 +376,7 @@ export const AIAssistant = () => {
     setExtractedPdfs(prev => {
       const existing = prev.find(e => e.pdfId === pdf.id);
       if (existing) return prev;
-      return [...prev, { pdfId: pdf.id, fileName: pdf.file_name, text: '', pageCount: 0, extracting: true }];
+      return [...prev, { pdfId: pdf.id, fileName: pdf.file_name, text: '', pages: [], pageCount: 0, extracting: true }];
     });
 
     try {
@@ -374,7 +386,9 @@ export const AIAssistant = () => {
       });
       setScanProgress(null);
       setExtractedPdfs(prev => prev.map(e =>
-        e.pdfId === pdf.id ? { ...e, text: extracted.text, pageCount: extracted.pageCount, extracting: false } : e
+        e.pdfId === pdf.id
+          ? { ...e, text: extracted.text, pages: extracted.pages, pageCount: extracted.pageCount, extracting: false }
+          : e
       ));
     } catch (err: any) {
       setScanProgress(null);
@@ -405,28 +419,40 @@ export const AIAssistant = () => {
     [extractedPdfs, selectedPdfIds]
   );
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userInput = input.trim();
-    setInput('');
+  // ─── Shared AI sender ────────────────────────────────────────────────────────
+  const sendToAI = async ({
+    userText,
+    batchPdfContext,
+    teachScanProgress,
+    overrideMode,
+    silent = false,
+  }: {
+    userText: string;
+    batchPdfContext?: string;
+    teachScanProgress?: { current: number; total: number };
+    overrideMode?: ChatMode;
+    silent?: boolean;
+  }) => {
     setIsLoading(true);
     setStreamingMsg('');
 
     try {
-      const userMsg = await saveAIConversation('user', userInput);
-      setMessages(prev => [...prev, userMsg]);
+      const userMsg = await saveAIConversation('user', userText);
+      if (!silent) setMessages(prev => [...prev, userMsg]);
 
-      const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
-      const activeScan = extractedPdfs.find(e => selectedPdfIds.includes(e.pdfId) && e.extracting);
+      const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
+      const effectiveMode = overrideMode ?? mode;
+      const effectiveContext = batchPdfContext ?? pdfContext;
+      const effectiveScan = teachScanProgress ?? null;
 
       const res = await callEdgeFunction('ai-chat', {
         user_id: user?.id,
-        message: userInput,
-        messages: [...history, { role: 'user', content: userInput }],
+        message: userText,
+        messages: [...history, { role: 'user', content: userText }],
         providerId: model,
-        mode,
-        ...(pdfContext ? { pdfContext } : {}),
-        ...(activeScan ? { scanProgress: { current: scanProgress?.current || 0, total: scanProgress?.total || 0 } } : {}),
+        mode: effectiveMode,
+        ...(effectiveContext ? { pdfContext: effectiveContext } : {}),
+        ...(effectiveScan ? { scanProgress: effectiveScan } : {}),
       });
 
       if (!res.ok) {
@@ -468,7 +494,6 @@ export const AIAssistant = () => {
         setMessages(prev => [...prev, assistantMsg]);
       }
 
-      // Award XP for AI chat
       await updateXP('ai_chat');
     } catch (error: any) {
       console.error('AI Error:', error);
@@ -478,7 +503,78 @@ export const AIAssistant = () => {
         id: Date.now().toString(), role: 'assistant' as const, content: errText, created_at: new Date().toISOString()
       }));
       setMessages(prev => [...prev, errMsg]);
-    } finally { setIsLoading(false); }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Teach session handlers ───────────────────────────────────────────────────
+  const startTeaching = async () => {
+    const readyPdf = extractedPdfs.find(e => selectedPdfIds.includes(e.pdfId) && e.pages.length > 0 && !e.extracting);
+    if (!readyPdf) return;
+
+    const session: TeachSession = {
+      pdfId: readyPdf.pdfId,
+      fileName: readyPdf.fileName,
+      pages: readyPdf.pages,
+      totalPages: readyPdf.pageCount,
+      currentBatch: 0,
+      finished: false,
+    };
+    setTeachSession(session);
+    setMode('teach');
+
+    const batchPages = session.pages.slice(0, BATCH_SIZE);
+    const batchText = batchPages.join('\n\n');
+    const endPage = Math.min(BATCH_SIZE, session.totalPages);
+
+    await sendToAI({
+      userText: `Please teach me pages 1 to ${endPage} of "${session.fileName}".`,
+      batchPdfContext: batchText,
+      teachScanProgress: { current: endPage, total: session.totalPages },
+      overrideMode: 'teach',
+    });
+  };
+
+  const nextBatch = async () => {
+    if (!teachSession || teachSession.finished) return;
+    const nextBatchIndex = teachSession.currentBatch + 1;
+    const startPage = nextBatchIndex * BATCH_SIZE;      // 0-indexed
+    const endPage = Math.min(startPage + BATCH_SIZE, teachSession.totalPages);
+    const batchPages = teachSession.pages.slice(startPage, endPage);
+    const batchText = batchPages.join('\n\n');
+    const finished = endPage >= teachSession.totalPages;
+
+    setTeachSession(prev => prev ? { ...prev, currentBatch: nextBatchIndex, finished } : prev);
+
+    await sendToAI({
+      userText: `Continue — teach me pages ${startPage + 1} to ${endPage} of "${teachSession.fileName}".`,
+      batchPdfContext: batchText,
+      teachScanProgress: { current: endPage, total: teachSession.totalPages },
+      overrideMode: 'teach',
+    });
+  };
+
+  const startTest = async () => {
+    setMode('test');
+    const batchText = teachSession
+      ? teachSession.pages.slice(0, Math.min((teachSession.currentBatch + 1) * BATCH_SIZE, teachSession.totalPages)).join('\n\n')
+      : pdfContext;
+    await sendToAI({
+      userText: `I'm ready to be tested on everything we covered from "${teachSession?.fileName || 'the document'}".`,
+      batchPdfContext: batchText,
+      teachScanProgress: teachSession
+        ? { current: teachSession.totalPages, total: teachSession.totalPages }
+        : undefined,
+      overrideMode: 'test',
+    });
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+    const userInput = input.trim();
+    setInput('');
+    await sendToAI({ userText: userInput });
   };
 
   const handleClear = async () => {
