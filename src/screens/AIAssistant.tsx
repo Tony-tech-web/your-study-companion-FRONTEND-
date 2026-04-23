@@ -714,6 +714,74 @@ export const AIAssistant = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* ── Teach session action strip ─────────────────────────── */}
+            <AnimatePresence>
+              {/* Start Teaching CTA: teach mode, PDF ready, no session yet */}
+              {mode === 'teach' && !teachSession && !isLoading && (() => {
+                const ready = extractedPdfs.find(e => selectedPdfIds.includes(e.pdfId) && e.pages.length > 0 && !e.extracting);
+                return ready ? (
+                  <motion.div key="start-teach" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    className="flex justify-center">
+                    <button onClick={startTeaching} disabled={isLoading}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-lg hover:opacity-90 active:scale-95 transition-all"
+                      style={{ background: 'linear-gradient(135deg, #6366f1, var(--primary))' }}>
+                      <Brain className="w-4 h-4" />
+                      Start Teaching — {ready.fileName.slice(0, 24)}{ready.fileName.length > 24 ? '…' : ''} ({ready.pageCount} pages)
+                    </button>
+                  </motion.div>
+                ) : null;
+              })()}
+
+              {/* Progress bar + Next / Test buttons during active teach session */}
+              {teachSession && !isLoading && (
+                <motion.div key="teach-controls" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="space-y-2">
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-3 px-1">
+                    <span className="text-[11px] font-medium text-[var(--muted)] shrink-0">
+                      Pages {Math.min(teachSession.currentBatch * BATCH_SIZE + 1, teachSession.totalPages)}–{Math.min((teachSession.currentBatch + 1) * BATCH_SIZE, teachSession.totalPages)} of {teachSession.totalPages}
+                    </span>
+                    <div className="flex-1 h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: 'var(--primary)' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(((teachSession.currentBatch + 1) * BATCH_SIZE / teachSession.totalPages) * 100, 100)}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-medium text-[var(--primary)] shrink-0">
+                      {Math.round(Math.min(((teachSession.currentBatch + 1) * BATCH_SIZE / teachSession.totalPages) * 100, 100))}%
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2 justify-center flex-wrap">
+                    {!teachSession.finished && (
+                      <button onClick={nextBatch} disabled={isLoading}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white hover:opacity-90 active:scale-95 transition-all shadow-md"
+                        style={{ background: 'linear-gradient(135deg, #6366f1, var(--primary))' }}>
+                        <ChevronRight className="w-4 h-4" />
+                        Next {Math.min(BATCH_SIZE, teachSession.totalPages - (teachSession.currentBatch + 1) * BATCH_SIZE > 0 ? BATCH_SIZE : teachSession.totalPages - (teachSession.currentBatch + 1) * BATCH_SIZE + BATCH_SIZE)} Pages
+                      </button>
+                    )}
+                    <button onClick={startTest} disabled={isLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold border transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-500"
+                      style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                      <FlaskConical className="w-4 h-4" />
+                      Test Me
+                    </button>
+                    {teachSession.finished && (
+                      <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+                        <Activity className="w-3 h-3" /> All pages covered!
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div ref={bottomRef} />
           </div>
         </div>
