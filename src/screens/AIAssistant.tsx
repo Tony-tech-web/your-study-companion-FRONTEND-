@@ -420,6 +420,8 @@ export const AIAssistant = () => {
       const activeScan = extractedPdfs.find(e => selectedPdfIds.includes(e.pdfId) && e.extracting);
 
       const res = await callEdgeFunction('ai-chat', {
+        user_id: user?.id,
+        message: userInput,
         messages: [...history, { role: 'user', content: userInput }],
         providerId: model,
         mode,
