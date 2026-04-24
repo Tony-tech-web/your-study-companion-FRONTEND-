@@ -43,11 +43,12 @@ const renderMarkdown = (text: string) => {
 };
 
 const MODELS = [
-  { id: 'gemini-flash',   label: 'Gemini Flash (Default)' },
-  { id: 'gpt-4o',         label: 'GPT-4o' },
-  { id: 'gpt-4o-mini',    label: 'GPT-4o Mini' },
-  { id: 'openrouter-gpt4', label: 'GPT-4o (OpenRouter)' },
+  { id: 'google',       label: 'Gemini Flash', provider: 'gemini',      desc: 'Fast & free' },
+  { id: 'google-pro',   label: 'Gemini Pro',   provider: 'gemini',      desc: 'More capable' },
+  { id: 'openrouter',   label: 'GPT-4o',       provider: 'openrouter',  desc: 'OpenRouter credits' },
 ];
+
+const AUTO_MODEL = 'auto';
 
 interface StudentPdf { id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string; }
 interface ExtractedPdfState { pdfId: string; fileName: string; text: string; pages: string[]; pageCount: number; extracting: boolean; error?: string; }
@@ -342,7 +343,8 @@ export const AIAssistant = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [model, setModel] = useState('gemini-flash');
+  const [autoSwitch, setAutoSwitch] = useState(true);
+  const [model, setModel] = useState('google');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [mode, setMode] = useState<ChatMode>('chat');
   const [pdfs, setPdfs] = useState<StudentPdf[]>([]);
@@ -450,7 +452,7 @@ export const AIAssistant = () => {
         user_id: user?.id,
         message: userText,
         messages: [...history, { role: 'user', content: userText }],
-        providerId: model,
+        providerId: autoSwitch ? AUTO_MODEL : model,
         mode: effectiveMode,
         ...(effectiveContext ? { pdfContext: effectiveContext } : {}),
         ...(effectiveScan ? { scanProgress: effectiveScan } : {}),
@@ -620,23 +622,53 @@ export const AIAssistant = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Model picker */}
+            {/* Model selector */}
             <div className="relative">
               <button onClick={() => setShowModelPicker(v => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[12px] font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--primary)]/50 transition-all">
-                {currentModel.label} <ChevronDown className="w-3 h-3" />
+                {autoSwitch ? (
+                  <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Auto</>
+                ) : (
+                  <>{MODELS.find(m => m.id === model)?.label || 'Select'}</>
+                )}
+                <ChevronDown className="w-3 h-3" />
               </button>
               <AnimatePresence>
                 {showModelPicker && (
                   <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                    className="absolute top-full right-0 mt-1.5 w-52 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 overflow-hidden">
-                    {MODELS.map(m => (
-                      <button key={m.id} onClick={() => { setModel(m.id); setShowModelPicker(false); }}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-left text-[13px] hover:bg-[var(--accent)] text-[var(--foreground)] transition-all">
-                        {m.label}
-                        {model === m.id && <Check className="w-3.5 h-3.5 text-[var(--primary)]" />}
+                    onClick={e => e.stopPropagation()}
+                    className="absolute top-full right-0 mt-1.5 w-64 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl z-50 overflow-hidden">
+
+                    {/* Auto Switch row */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+                      <div>
+                        <p className="text-[13px] font-semibold text-[var(--foreground)]">Auto Switch</p>
+                        <p className="text-[10px] text-[var(--muted)] opacity-60">Best available provider</p>
+                      </div>
+                      <button onClick={() => setAutoSwitch(v => !v)}
+                        className={cn('relative w-10 h-5 rounded-full transition-all',
+                          autoSwitch ? 'bg-[var(--primary)]' : 'bg-[var(--border)]')}>
+                        <div className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all',
+                          autoSwitch ? 'left-5' : 'left-0.5')} />
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Manual model list — only when auto is OFF */}
+                    <div className={cn('transition-all', autoSwitch ? 'opacity-40 pointer-events-none' : '')}>
+                      <p className="px-4 pt-2.5 pb-1 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Select Model</p>
+                      {MODELS.map(m => (
+                        <button key={m.id}
+                          disabled={autoSwitch}
+                          onClick={() => { setModel(m.id); setShowModelPicker(false); }}
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-[var(--accent)] transition-all group">
+                          <div>
+                            <p className="text-[13px] font-medium text-[var(--foreground)]">{m.label}</p>
+                            <p className="text-[10px] text-[var(--muted)] opacity-60">{m.desc}</p>
+                          </div>
+                          {!autoSwitch && model === m.id && <Check className="w-3.5 h-3.5 text-[var(--primary)]" />}
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

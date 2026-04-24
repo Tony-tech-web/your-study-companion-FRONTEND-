@@ -27,42 +27,82 @@ const navItems = [
 const STORAGE_KEY = 'orbit-sidebar-collapsed';
 
 // API Status Modal — global, used in sidebar
+interface ApiProvider { name: string; status: string; latency: string; is_backup: boolean; }
+
 const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
-  const [providers, setProviders] = React.useState<any[]>([]);
+  const [providers, setProviders] = React.useState<ApiProvider[]>([]);
   const [loading, setLoading] = React.useState(true);
-  React.useEffect(() => {
+  const [lastChecked, setLastChecked] = React.useState<Date | null>(null);
+
+  const fetchStatus = React.useCallback(() => {
+    setLoading(true);
     import('../services/api').then(({ default: api }) => {
-      api.get('/api/model-health').then((r: any) => setProviders(r.data.providers || [])).catch(() => {}).finally(() => setLoading(false));
+      api.get('/api/model-health')
+        .then((r: any) => { setProviders(r.data.providers || []); setLastChecked(new Date()); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
     });
   }, []);
+
+  React.useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  const onlineCount = providers.filter(p => p.status === 'connected').length;
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-        className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-base font-bold text-[var(--foreground)]">API Status</h2>
-            <p className="text-xs text-[var(--muted)] mt-0.5">Live provider health — Supabase Edge</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all"><X className="w-4 h-4" /></button>
-        </div>
-        {loading
-          ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>
-          : <div className="space-y-2">
-              {providers.map((p: any) => (
-                <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
-                  <div className={cn('w-2 h-2 rounded-full shrink-0', p.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[var(--foreground)] truncate">{p.name}</p>
-                    <p className="text-[10px] text-[var(--muted)] opacity-60">{p.is_backup ? 'Backup' : 'Primary'} · {p.latency} latency</p>
-                  </div>
-                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md', p.status === 'connected' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500')}>
-                    {p.status === 'connected' ? 'Online' : 'No Key'}
-                  </span>
-                </div>
-              ))}
+        className="w-full max-w-sm bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2.5">
+            <div className={cn('w-2.5 h-2.5 rounded-full', onlineCount > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
+            <div>
+              <p className="text-[13px] font-bold text-[var(--foreground)]">API Status</p>
+              <p className="text-[10px] text-[var(--muted)] opacity-60">
+                {loading ? 'Checking...' : }
+              </p>
             </div>
-        }
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchStatus} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] hover:text-[var(--foreground)] transition-all" title="Refresh">
+              <Loader2 className={cn('w-3.5 h-3.5', loading ? 'animate-spin text-[var(--primary)]' : '')} />
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        {/* Providers */}
+        <div className="p-3 space-y-2">
+          {loading && providers.length === 0 ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>
+          ) : providers.map((p) => {
+            const online = p.status === 'connected';
+            return (
+              <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
+                <div className={cn('w-2 h-2 rounded-full shrink-0 transition-all', online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-[var(--foreground)]">{p.name}</p>
+                  <p className="text-[10px] text-[var(--muted)] opacity-50">{p.is_backup ? 'Fallback' : 'Primary'} · {p.latency} latency</p>
+                </div>
+                <div className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border',
+                  online
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                    : 'bg-red-500/10 border-red-500/20 text-red-500')}>
+                  {online ? 'Online' : 'No Key'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-between">
+          <p className="text-[10px] text-[var(--muted)] opacity-40">
+            {lastChecked ?  : 'Not checked yet'}
+          </p>
+          <p className="text-[10px] text-[var(--muted)] opacity-40">Auto switches between providers</p>
+        </div>
       </div>
     </div>
   );
