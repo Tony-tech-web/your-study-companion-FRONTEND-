@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 
 import { Sidebar, MobileNav } from '../../components/Navigation';
 import { useAuth } from '../../contexts/AuthContext';
