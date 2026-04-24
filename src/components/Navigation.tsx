@@ -60,7 +60,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
             <div>
               <p className="text-[13px] font-bold text-[var(--foreground)]">API Status</p>
               <p className="text-[10px] text-[var(--muted)] opacity-60">
-                {loading ? 'Checking...' : }
+                {loading ? 'Checking...' : `${onlineCount} of ${providers.length} systems online`}
               </p>
             </div>
           </div>
@@ -99,7 +99,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-between">
           <p className="text-[10px] text-[var(--muted)] opacity-40">
-            {lastChecked ?  : 'Not checked yet'}
+            {lastChecked ? `Last checked ${lastChecked.toLocaleTimeString()}` : 'Not checked yet'}
           </p>
           <p className="text-[10px] text-[var(--muted)] opacity-40">Auto switches between providers</p>
         </div>
