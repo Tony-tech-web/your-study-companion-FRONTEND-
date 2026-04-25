@@ -1,5 +1,5 @@
-import { ChatSkeleton } from '../components/Skeleton';
 'use client';
+import { ChatSkeleton } from '../components/Skeleton';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Send, Sparkles, Loader2, Trash2, Activity, ChevronDown, Check,

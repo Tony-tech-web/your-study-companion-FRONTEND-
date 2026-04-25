@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { Card, Input, Button } from '../components/UI';
 import { motion, AnimatePresence } from 'motion/react';

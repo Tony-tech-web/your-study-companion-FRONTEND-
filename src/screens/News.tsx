@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { Card, Badge, Button } from '../components/UI';
 import { getNews } from '../services/news';
