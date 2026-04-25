@@ -47,11 +47,25 @@ export const Login = () => {
 
   const handleSignup = async () => {
     if (!email || !password || !fullName || !username) { setError('Please fill in all required fields'); return; }
+    
+    // Enforce university domain to match backend rules
+    if (!email.toLowerCase().endsWith('@elizadeuniversity.edu.ng')) {
+      setError('Please use a valid @elizadeuniversity.edu.ng email address');
+      return;
+    }
+
     setLoading(true); setError('');
     try {
       const { data, error } = await supabase.auth.signUp({
         email, password,
-        options: { data: { full_name: fullName, username, matric_number: matricNumber, phone_number: phoneNumber } }
+        options: { 
+          data: { 
+            full_name: fullName, 
+            username, 
+            matric_number: matricNumber.trim() || null, 
+            phone_number: phoneNumber.trim() || null 
+          } 
+        }
       });
       if (error) { setError(error.message); return; }
       if (data.session) { router.push('/dashboard'); }
