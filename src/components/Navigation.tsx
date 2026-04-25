@@ -38,8 +38,20 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
     setLoading(true);
     import('../services/api').then(({ default: api }) => {
       api.get('/api/model-health')
-        .then((r: any) => { setProviders(r.data.providers || []); setLastChecked(new Date()); })
-        .catch(() => {})
+        .then((r: any) => {
+          setProviders(r.data.providers || []);
+          setLastChecked(new Date());
+        })
+        .catch((err: any) => {
+          console.error('[APIStatus] fetch failed:', err);
+          // Show placeholder providers with error state
+          setProviders([
+            { name: 'OpenAI (GPT-4o)', status: 'error', latency: 'unknown', is_backup: false },
+            { name: 'Google Gemini', status: 'error', latency: 'unknown', is_backup: true },
+            { name: 'OpenRouter', status: 'error', latency: 'unknown', is_backup: true },
+            { name: 'Serper (Research)', status: 'error', latency: 'unknown', is_backup: true },
+          ]);
+        })
         .finally(() => setLoading(false));
     });
   }, []);
@@ -47,6 +59,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
   React.useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const onlineCount = providers.filter(p => p.status === 'connected').length;
+  const hasError = providers.some(p => p.status === 'error');
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -56,7 +69,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
-            <div className={cn('w-2.5 h-2.5 rounded-full', onlineCount > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
+            <div className={cn('w-2.5 h-2.5 rounded-full', onlineCount > 0 ? 'bg-emerald-500 animate-pulse' : hasError ? 'bg-yellow-500 animate-pulse' : 'bg-red-500')} />
             <div>
               <p className="text-[13px] font-bold text-[var(--foreground)]">API Status</p>
               <p className="text-[10px] text-[var(--muted)] opacity-60">
@@ -80,16 +93,18 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
             const online = p.status === 'connected';
             return (
               <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--input)] border border-[var(--border)]">
-                <div className={cn('w-2 h-2 rounded-full shrink-0 transition-all', online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
+                <div className={cn('w-2 h-2 rounded-full shrink-0 transition-all', p.status === 'connected' ? 'bg-emerald-500 animate-pulse' : p.status === 'error' ? 'bg-yellow-500' : 'bg-red-500')} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-[var(--foreground)]">{p.name}</p>
                   <p className="text-[10px] text-[var(--muted)] opacity-50">{p.is_backup ? 'Fallback' : 'Primary'} · {p.latency} latency</p>
                 </div>
                 <div className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border',
-                  online
+                  p.status === 'connected'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                    : 'bg-red-500/10 border-red-500/20 text-red-500')}>
-                  {online ? 'Online' : 'No Key'}
+                    : p.status === 'error'
+                      ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                      : 'bg-red-500/10 border-red-500/20 text-red-500')}>
+                  {p.status === 'connected' ? 'Online' : p.status === 'error' ? 'Unreachable' : 'No Key'}
                 </div>
               </div>
             );
