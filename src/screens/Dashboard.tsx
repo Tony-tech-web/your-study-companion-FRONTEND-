@@ -1,10 +1,11 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { DashboardSkeleton } from '../components/Skeleton';
 import { getFullDashboardStats, getTasks, getActivity, FullStats } from '../services/dashboard';
 import { Task, StudyActivity } from '../types';
 import { cn } from '../lib/utils';
-import { Plus, CheckCircle2, Loader2, TrendingUp, Zap, Brain, Clock } from 'lucide-react';
+import { Plus, CheckCircle2, TrendingUp, Zap, Brain, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 
@@ -23,11 +24,7 @@ export const Dashboard = () => {
   }, []);
 
   if (loading || !stats) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[var(--background)]">
-        <Loader2 className="w-5 h-5 text-[var(--primary)] animate-spin" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const xpPct = Math.round((stats.user.xp / stats.user.maxXp) * 100);

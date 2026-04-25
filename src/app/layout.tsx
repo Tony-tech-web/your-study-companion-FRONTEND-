@@ -1,26 +1,25 @@
+'use client';
 import React from 'react';
-import type { Metadata } from 'next';
 import '../index.css';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from 'next-themes';
+import { DialogProvider } from '../components/Dialog';
 
-export const metadata: Metadata = {
-  title: 'Orbit',
-  description: 'AI Education Neural Link',
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      </head>
       <body className="antialiased">
         <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem={false}>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <DialogProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </DialogProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,3 +1,4 @@
+import { ChatSkeleton } from '../components/Skeleton';
 'use client';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
@@ -596,7 +597,7 @@ export const AIAssistant = () => {
   const currentMode = modeConfig[mode];
   const currentModel = MODELS.find(m => m.id === model) || MODELS[0];
 
-  if (isFetching) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>;
+  if (isFetching) return <ChatSkeleton />;
 
   return (
     <div className="flex-1 flex bg-[var(--background)] text-[var(--foreground)] h-full overflow-hidden">

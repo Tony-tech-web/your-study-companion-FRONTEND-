@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getLeaderboard, LeaderboardResult } from '../services/leaderboard';
 import { LeaderboardEntry } from '../types';
 import { Trophy, Medal, Loader2 } from 'lucide-react';
+import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,7 +20,7 @@ export const Leaderboard = () => {
     getLeaderboard().then(setResult).catch(e => setError(e.message || 'Failed to load')).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 text-[var(--primary)] animate-spin" /></div>;
+  if (loading) return <ListSkeleton rows={8} />;
   if (error || !result) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><p className="text-sm text-[var(--muted)]">{error || 'No data'}</p></div>;
 
   const { entries, myRank } = result;
