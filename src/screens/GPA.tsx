@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ListSkeleton } from '../components/Skeleton';
 import { Plus, TrendingUp, Loader2, Trash2, GraduationCap, X } from 'lucide-react';
 import { getGPARecords, createGPARecord, deleteGPARecord } from '../services/gpa';
 import { GPARecord } from '../types';
@@ -100,7 +101,7 @@ export const GPA = () => {
   const cumGPA = records.length ? (records.reduce((a, r) => a + Number(r.gpa), 0) / records.length).toFixed(2) : '0.00';
   const totalCredits = records.reduce((a, r) => a + r.totalCredits, 0);
 
-  if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>;
+  if (loading) return <ListSkeleton rows={4} />;
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">

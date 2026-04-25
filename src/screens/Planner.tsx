@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
 import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar } from 'lucide-react';
 import { getStudyPlans, createStudyPlan, deleteStudyPlan } from '../services/planner';
@@ -82,7 +83,7 @@ export const Planner = () => {
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);
   const avgProgress = plans.length ? Math.round(plans.reduce((a, p) => a + p.progress, 0) / plans.length) : 0;
 
-  if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>;
+  if (loading) return <ListSkeleton rows={3} />;
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">

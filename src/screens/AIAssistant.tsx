@@ -1,3 +1,4 @@
+import { ChatSkeleton } from '../components/Skeleton';
 'use client';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
@@ -596,7 +597,7 @@ export const AIAssistant = () => {
   const currentMode = modeConfig[mode];
   const currentModel = MODELS.find(m => m.id === model) || MODELS[0];
 
-  if (isFetching) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>;
+  if (isFetching) return <ChatSkeleton />;
 
   return (
     <div className="flex-1 flex bg-[var(--background)] text-[var(--foreground)] h-full overflow-hidden">
@@ -668,12 +669,6 @@ export const AIAssistant = () => {
                           {!autoSwitch && model === m.id && <Check className="w-3.5 h-3.5 text-[var(--primary)]" />}
                         </button>
                       ))}
-                    </div>
-                    <div className="px-4 py-2.5 border-t border-[var(--border)]">
-                      <p className="text-[10px] text-[var(--muted)] opacity-40 leading-relaxed">
-                        Gemini Flash/Pro → uses GEMINI_API_KEY directly (free).<br/>
-                        GPT-4o → requires OpenRouter credits.
-                      </p>
                     </div>
                   </motion.div>
                 )}

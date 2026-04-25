@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getLeaderboard, LeaderboardResult } from '../services/leaderboard';
 import { LeaderboardEntry } from '../types';
 import { Trophy, Medal, Loader2 } from 'lucide-react';
+import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,19 +20,8 @@ export const Leaderboard = () => {
     getLeaderboard().then(setResult).catch(e => setError(e.message || 'Failed to load')).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-5 h-5 text-[var(--primary)] animate-spin" /></div>;
-  if (error || !result) return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-[var(--background)] gap-3 p-8">
-      <Trophy className="w-10 h-10 text-[var(--muted)] opacity-30" />
-      <p className="text-sm font-semibold text-[var(--foreground)]">Leaderboard unavailable</p>
-      <p className="text-xs text-[var(--muted)] text-center max-w-xs opacity-60">{error || 'No data available'}</p>
-      <p className="text-[10px] text-[var(--muted)] opacity-40 text-center max-w-xs">Make sure the <code className="bg-[var(--input)] px-1 rounded">get-leaderboard</code> Supabase edge function is deployed and <code className="bg-[var(--input)] px-1 rounded">SUPABASE_ANON_KEY</code> is set in Supabase secrets.</p>
-      <button onClick={() => { setLoading(true); setError(null); getLeaderboard().then(setResult).catch(e => setError(e.message)).finally(() => setLoading(false)); }}
-        className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: 'var(--primary)' }}>
-        Try Again
-      </button>
-    </div>
-  );
+  if (loading) return <ListSkeleton rows={8} />;
+  if (error || !result) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><p className="text-sm text-[var(--muted)]">{error || 'No data'}</p></div>;
 
   const { entries, myRank } = result;
   const top3 = entries.slice(0, 3);
