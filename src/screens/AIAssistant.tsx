@@ -669,6 +669,12 @@ export const AIAssistant = () => {
                         </button>
                       ))}
                     </div>
+                    <div className="px-4 py-2.5 border-t border-[var(--border)]">
+                      <p className="text-[10px] text-[var(--muted)] opacity-40 leading-relaxed">
+                        Gemini Flash/Pro → uses GEMINI_API_KEY directly (free).<br/>
+                        GPT-4o → requires OpenRouter credits.
+                      </p>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
