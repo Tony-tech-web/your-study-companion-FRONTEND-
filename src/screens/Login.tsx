@@ -36,6 +36,7 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmBanner, setShowConfirmBanner] = useState(false);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [matricNumber, setMatricNumber] = useState('');
@@ -47,7 +48,7 @@ export const Login = () => {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push('/dashboard');
+        router.push('/');
       } else {
         if (!fullName || !username) { setError('Please fill in all required fields'); setLoading(false); return; }
         const { data, error } = await supabase.auth.signUp({
@@ -55,7 +56,7 @@ export const Login = () => {
           options: { data: { full_name: fullName, username, matric_number: matricNumber } }
         });
         if (error) throw error;
-        if (data.session) router.push('/dashboard');
+        if (data.session) router.push('/');
         else { setError('Account created! Check your email to confirm before signing in.'); setMode('login'); }
       }
     } catch (e: any) {
@@ -116,7 +117,20 @@ export const Login = () => {
 
           {/* Error */}
           <AnimatePresence>
-            {error && (
+            {showConfirmBanner && (
+        <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+          <p className="text-sm font-semibold text-emerald-400 mb-1">✅ Account created!</p>
+          <p className="text-xs text-emerald-400/80 leading-relaxed">
+            We sent a confirmation link to <strong>{email}</strong>. 
+            Click it to verify your account, then come back to sign in.
+          </p>
+          <button onClick={() => { setShowConfirmBanner(false); setMode('login'); }}
+            className="mt-3 text-xs font-semibold text-emerald-400 underline">
+            Go to Sign In →
+          </button>
+        </div>
+      )}
+      {error && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden mb-4">
                 <div className="flex items-start gap-2.5 p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl">
