@@ -86,7 +86,7 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-zinc-50 dark:bg-[#09090b] flex items-center justify-center p-4 py-8">
       <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm bg-white dark:bg-[#111113] border border-zinc-200 dark:border-white/8 rounded-3xl shadow-2xl shadow-black/10 dark:shadow-black/60 overflow-hidden">

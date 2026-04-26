@@ -225,7 +225,7 @@ export const MobileNav = () => {
   return (
     <>
       {showStatus && <APIStatusModal onClose={() => setShowStatus(false)} />}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-12 bg-white/90 dark:bg-[#111113]/90 backdrop-blur-xl border-b border-zinc-200 dark:border-white/5 flex items-center justify-between px-4 z-40">
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white/90 dark:bg-[#111113]/90 backdrop-blur-xl border-b border-zinc-200 dark:border-white/5 flex items-center justify-between px-4 z-40" style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(3rem + env(safe-area-inset-top, 0px))" }}>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-[#f27d26] flex items-center justify-center shadow-sm">
             <Zap className="w-3.5 h-3.5 text-white" />
@@ -244,7 +244,7 @@ export const MobileNav = () => {
               className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
             <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-              className="relative w-64 h-full bg-white dark:bg-[#111113] border-r border-zinc-200 dark:border-white/5 flex flex-col p-3 shadow-2xl">
+              className="relative w-64 h-full bg-white dark:bg-[#111113] border-r border-zinc-200 dark:border-white/5 flex flex-col shadow-2xl" style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))", paddingLeft: "0.75rem", paddingRight: "0.75rem" }}>
               <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-xl bg-[#f27d26] flex items-center justify-center">
