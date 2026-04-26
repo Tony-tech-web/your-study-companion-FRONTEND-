@@ -99,3 +99,114 @@ html, body { scroll-behavior: smooth; }
 /* iOS spring feel for buttons */
 .btn-spring { transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .btn-spring:active { transform: scale(0.95); }
+
+/* ── Safe area / notch support ── */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Ensure full height on mobile including notch */
+html, body {
+  height: 100%;
+  height: -webkit-fill-available;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#__next, [data-nextjs-scroll-focus-boundary] {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+
+/* ── One size fits all responsive fixes ── */
+
+/* Sidebar: hidden on mobile, shown on lg+ */
+/* Already handled by Tailwind lg: classes in Navigation */
+
+/* Mobile nav: shown on mobile, hidden on lg+ */
+/* Already handled by Tailwind lg: classes in Navigation */
+
+/* Prevent horizontal overflow on all screen sizes */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* Mobile bottom nav safe area padding */
+.mobile-nav-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
+}
+
+/* Content area: respect top notch on mobile */
+.content-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── Fluid typography ── */
+@media (max-width: 640px) {
+  .text-4xl { font-size: 1.75rem; }
+  .text-3xl { font-size: 1.5rem; }
+}
+
+/* ── iOS momentum scrolling ── */
+.overflow-y-auto, .overflow-y-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* ── Custom scrollbar (desktop only) ── */
+@media (hover: hover) {
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+  }
+}
+
+/* ── Web app: one size fits all layout ── */
+
+/* Use dvh (dynamic viewport height) where supported — handles iOS Safari toolbar */
+.h-screen-safe {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* The app shell */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Mobile top bar clears the notch */
+.mobile-topbar {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Authenticated main: on small screens, leave room for top bar */
+@media (max-width: 1023px) {
+  .authenticated-main {
+    padding-top: max(3rem, calc(3rem + env(safe-area-inset-top, 0px)));
+  }
+}
+
+/* Screen content: clamp horizontal padding for all sizes */
+.screen-content {
+  padding-left: max(env(safe-area-inset-left, 0px), 1rem);
+  padding-right: max(env(safe-area-inset-right, 0px), 1rem);
+}
+
+/* Responsive font scale */
+@media (max-width: 375px) {
+  html { font-size: 14px; }
+}
+
+/* Prevent text size inflation on rotation */
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}

@@ -29,7 +29,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   // Show spinner while checking auth — never flash redirect
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+      <div className="flex items-center justify-center bg-[var(--background)]" style={{ height: "100dvh" }}>
         <div className="flex flex-col items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-lg">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,9 +46,9 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
+    <div className="flex bg-[var(--background)] text-[var(--foreground)] overflow-hidden" style={{ height: "100dvh" }}>
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden pt-12 lg:pt-0">
+      <main className="flex-1 flex flex-col overflow-hidden pt-[calc(3rem+env(safe-area-inset-top))] lg:pt-0">
         {children}
       </main>
       <MobileNav />
