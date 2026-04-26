@@ -1,147 +1,131 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Card, Input, Button } from '../components/UI';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { Send, Phone, Video, Search, Info, Users, Circle, Loader2 } from 'lucide-react';
+import { Send, Search, MessageSquare, Loader2 } from 'lucide-react';
 import { getChatMessages, sendChatMessage, ChatMessage } from '../services/chat';
+import { useAuth } from '../contexts/AuthContext';
+import { ListSkeleton } from '../components/Skeleton';
 
 export const Chat = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  useEffect(() => { fetchMessages(); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const fetchMessages = async () => {
-    try {
-      const data = await getChatMessages();
-      setMessages(data);
-    } catch (err) {
-      console.error('Failed to fetch messages:', err);
-    } finally {
-      setLoading(false);
-    }
+    try { const data = await getChatMessages(); setMessages(data); }
+    catch (err) { console.error('Failed to fetch messages:', err); }
+    finally { setLoading(false); }
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
-    const content = input;
+    if (!input.trim() || sending) return;
+    const content = input.trim();
     setInput('');
+    setSending(true);
     try {
       const newMsg = await sendChatMessage(content);
       setMessages(prev => [...prev, newMsg]);
-    } catch (err) {
-      alert('Failed to send message');
-    }
+    } catch (err) { console.error(err); }
+    finally { setSending(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[var(--background)]">
-        <Loader2 className="w-10 h-10 text-[var(--primary)] animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <ListSkeleton rows={6} />;
 
   return (
-    <div className="flex-1 flex bg-[var(--background)] overflow-hidden">
-      {/* Sidebar List (Mocked contacts for now as there is no profiles list endpoint yet) */}
-      <div className="w-80 border-r border-[var(--border)] hidden md:flex flex-col bg-[var(--card)]/50 shrink-0">
-        <header className="p-8 pb-4 shrink-0">
-          <h2 className="text-2xl font-black tracking-tighter uppercase">Messages</h2>
-          <div className="relative mt-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-            <input 
-              placeholder="Search conversations..." 
-              className="w-full bg-[var(--input)] border border-[var(--border)] rounded-2xl pl-12 pr-4 py-3 text-xs font-bold focus:outline-none focus:border-[var(--primary)]"
-            />
+    <div className="flex-1 flex bg-[var(--background)] text-[var(--foreground)] overflow-hidden h-full">
+      {/* Sidebar */}
+      <div className="w-72 border-r border-[var(--border)] hidden md:flex flex-col bg-[var(--card)] shrink-0">
+        <div className="p-4 border-b border-[var(--border)] shrink-0">
+          <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">Messages</h2>
+          <div className="relative mt-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--muted)] opacity-40" />
+            <input placeholder="Search..." className="w-full bg-[var(--input)] border border-[var(--border)] rounded-xl pl-9 pr-3 py-2 text-xs text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
           </div>
-        </header>
-        
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-           <div className="p-4 rounded-3xl flex items-center gap-4 cursor-pointer transition-all border-2 bg-[var(--accent)] border-[var(--primary)]/30 shadow-lg">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center font-black shadow-inner">G</div>
-              <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-center mb-0.5">
-                  <h3 className="font-black text-xs uppercase tracking-tight text-[var(--foreground)] truncate">Global Study Hub</h3>
-                  <span className="text-[10px] font-bold text-[var(--muted)] opacity-60">Online</span>
-                </div>
-                <p className="text-xs text-[var(--muted)] truncate font-medium">Synchronizing nodes...</p>
-              </div>
-           </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--primary)]/8 border border-[var(--primary)]/20 cursor-pointer">
+            <div className="w-9 h-9 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center text-sm font-black shrink-0">G</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-[var(--foreground)] truncate">Global Study Hub</p>
+              <p className="text-[11px] text-[var(--muted)] truncate">Campus-wide channel</p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          </div>
+          {/* Realtime chat coming soon notice */}
+          <p className="text-center text-[10px] text-[var(--muted)] opacity-30 mt-4 px-3">Realtime messaging coming soon</p>
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative h-full">
-        <header className="h-24 px-6 md:px-10 border-b border-[var(--border)] bg-[var(--card)]/50 backdrop-blur-xl flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center font-black md:hidden">G</div>
-             <div>
-               <h3 className="font-black text-lg md:text-xl uppercase tracking-tighter">Global Study Hub</h3>
-               <div className="flex items-center gap-2 mt-0.5">
-                  <Circle className="w-2 h-2 fill-[var(--primary)] text-[var(--primary)] animate-pulse" />
-                  <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest leading-none">Cluster Synchronized</span>
-               </div>
-             </div>
-          </div>
-          <div className="flex items-center gap-2 md:gap-4">
-            <button className="p-3 hover:bg-[var(--accent)]/50 rounded-xl transition-all text-[var(--muted)] hover:text-[var(--primary)]"><Phone className="w-5 h-5" /></button>
-            <button className="p-3 hover:bg-[var(--accent)]/50 rounded-xl transition-all text-[var(--muted)] hover:text-[var(--primary)]"><Video className="w-5 h-5" /></button>
-            <button className="p-3 hover:bg-[var(--accent)]/50 rounded-xl transition-all text-[var(--muted)] hover:text-[var(--primary)]"><Info className="w-5 h-5" /></button>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 pb-32 lg:pb-10 custom-scrollbar">
-          {messages.map((msg, idx) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                "flex flex-col max-w-[80%] md:max-w-[70%]",
-                msg.receiver_id === null ? "ml-auto items-end" : "items-start" // Assuming null receiver means broadcast or 'me'
-              )}
-            >
-              <div className={cn(
-                "p-5 rounded-4xl text-sm md:text-base leading-relaxed shadow-xl",
-                msg.receiver_id === null 
-                  ? "bg-[var(--primary)] text-white rounded-tr-none" 
-                  : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] rounded-tl-none font-medium shadow-sm hover:border-[var(--primary)]/30 transition-all"
-              )}>
-                {msg.content}
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Header */}
+        <div className="px-5 py-3.5 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center text-sm font-black md:hidden">G</div>
+            <div>
+              <p className="text-[14px] font-bold text-[var(--foreground)]">Global Study Hub</p>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-[var(--muted)] font-medium uppercase tracking-wider">Campus channel</span>
               </div>
-              <span className="text-[10px] font-bold text-[var(--muted)] mt-2 mx-4 opacity-40 uppercase tracking-tighter">
-                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </motion.div>
-          ))}
-          {messages.length === 0 && (
-            <div className="p-20 text-center opacity-40">
-              <p className="text-xs font-black uppercase tracking-widest">No transmissions detected in this frequency</p>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Input Bar Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 pointer-events-none pb-28 md:pb-10 z-20">
-          <div className="max-w-4xl mx-auto w-full flex items-center gap-4 bg-[var(--card)]/90 backdrop-blur-2xl p-3 rounded-5xl border-2 border-[var(--border)] shadow-[0_30px_60px_-12px_rgb(0,0,0,0.3)] pointer-events-auto hover:border-[var(--primary)] transition-all">
-             <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Transmit data..."
-                className="flex-1 bg-transparent border-none focus:outline-none font-black text-sm md:text-base text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-30 px-6"
-              />
-             <button 
-               onClick={handleSend}
-               className="w-14 h-14 bg-[var(--primary)] text-white rounded-4xl flex items-center justify-center shadow-xl shadow-[var(--primary)]/30 hover:scale-105 active:scale-95 transition-all"
-             >
-               <Send className="w-6 h-6" />
-             </button>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-24 space-y-3">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+              <MessageSquare className="w-10 h-10 text-[var(--muted)]" />
+              <p className="text-sm text-[var(--muted)] font-medium">No messages yet. Start the conversation.</p>
+            </div>
+          )}
+          <AnimatePresence initial={false}>
+            {messages.map((msg, i) => {
+              const isMe = msg.sender_id === user?.id;
+              return (
+                <motion.div key={msg.id || i}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', damping: 24, stiffness: 140 }}
+                  className={cn('flex gap-2.5', isMe ? 'flex-row-reverse' : '')}>
+                  <div className={cn('w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5',
+                    isMe ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] border border-[var(--border)] text-[var(--muted)]')}>
+                    {isMe ? (user?.email?.slice(0, 2).toUpperCase() || 'ME') : 'U'}
+                  </div>
+                  <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm',
+                    isMe
+                      ? 'bg-[var(--primary)] text-white rounded-tr-none'
+                      : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] rounded-tl-none')}>
+                    <p className="leading-relaxed">{msg.content}</p>
+                    <p className={cn('text-[10px] mt-1 opacity-60', isMe ? 'text-right' : '')}>
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent">
+          <div className="flex items-center gap-2.5 bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-2.5 shadow-lg focus-within:border-[var(--primary)] transition-all">
+            <input value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder="Send a message..."
+              className="flex-1 bg-transparent border-none focus:outline-none text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40" />
+            <button onClick={handleSend} disabled={sending || !input.trim()}
+              className="w-8 h-8 bg-[var(--primary)] text-white rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
+              {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
       </div>

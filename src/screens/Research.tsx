@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Check, X, Lightbulb, Code2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDialog } from '../components/Dialog';
 import { cn } from '../lib/utils';
 import { searchResearch, getResearchHistory, deleteResearchEntry, SearchResult, ResearchSearchResult } from '../services/research';
 import { updateXP } from '../lib/supabase';
@@ -53,9 +54,12 @@ export const Research = () => {
     } finally { setSearching(false); }
   };
 
+  const { show: showDialog } = useDialog();
   const handleDelete = async (id: string) => {
+    const ok = await showDialog({ title: 'Delete Search', message: 'Remove this search from history?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try { await deleteResearchEntry(id); setHistory(prev => prev.filter(h => h.id !== id)); }
-    catch { alert('Failed to delete'); }
+    catch { showDialog({ type: 'error', message: 'Failed to delete.' }); }
   };
 
   const getCitation = (r: SearchResult) => {

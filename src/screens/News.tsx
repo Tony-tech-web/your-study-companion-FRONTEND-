@@ -1,128 +1,131 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Card, Badge, Button } from '../components/UI';
-import { getNews } from '../services/news';
-import { NewsItem } from '../types';
-import { Bookmark, Search, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import { Bookmark, Clock, Tag } from 'lucide-react';
+import { getNews } from '../services/news';
+import { NewsItem } from '../types';
+import { ListSkeleton } from '../components/Skeleton';
+
+const categories = ['All', 'Academic', 'Events', 'Research', 'General'];
 
 export const News = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [saved, setSaved] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const data = await getNews();
-        setNews(data);
-      } catch (err) {
-        console.error('Failed to fetch news:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
+    getNews().then(setNews).catch(console.error).finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[var(--background)]">
-        <Loader2 className="w-10 h-10 text-[var(--primary)] animate-spin" />
-      </div>
-    );
-  }
+  const filtered = activeCategory === 'All'
+    ? news
+    : news.filter(n => n.category?.toLowerCase() === activeCategory.toLowerCase());
+
+  if (loading) return <ListSkeleton rows={5} />;
 
   return (
-    <div className="flex-1 p-4 sm:p-6 md:p-10 bg-[var(--background)] text-[var(--foreground)] overflow-y-auto custom-scrollbar pb-32 lg:pb-10">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">News Broadcast</h1>
-          <p className="text-[var(--muted)] text-xs font-black uppercase tracking-[0.2em] mt-3 opacity-60">Source: <span className="text-[var(--primary)] font-black">Cluster_Global_Feed</span></p>
-        </div>
-        <div className="flex gap-2">
-           <Badge className="bg-[var(--accent)] text-[var(--primary)] border-[var(--border)] font-black text-[10px] tracking-widest py-2 px-4 rounded-xl">SYNC: REAL-TIME</Badge>
-        </div>
-      </header>
+    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+      <div className="max-w-4xl mx-auto p-6 space-y-5">
 
-      <div className="grid grid-cols-12 gap-10">
-        {/* Main Feed */}
-        <div className="col-span-12 lg:col-span-9">
-          <h2 className="text-[10px] font-black mb-8 text-[var(--muted)] uppercase tracking-[0.3em] opacity-60">Primary Data Stream</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {news.map((item, idx) => (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                key={item.id} 
-                className="group cursor-pointer flex flex-col h-full"
-              >
-                <div className="relative overflow-hidden rounded-4xl aspect-video mb-6 shadow-xl border border-[var(--border)] group-hover:border-[var(--primary)] transition-all">
-                  <img 
-                    src={item.image} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100" 
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4">
-                     <Badge className="bg-[var(--card)]/90 backdrop-blur-md text-[var(--primary)] border-[var(--border)] font-black uppercase tracking-widest text-[9px] py-1.5 px-4 shadow-xl">{item.category}</Badge>
-                  </div>
-                </div>
-                <h3 className="text-xl font-black mb-3 group-hover:text-[var(--primary)] transition-colors text-[var(--foreground)] leading-tight uppercase tracking-tight">{item.title}</h3>
-                <p className="text-xs text-[var(--muted)] line-clamp-3 mb-6 font-medium leading-relaxed opacity-80 uppercase tracking-tighter">{item.excerpt}</p>
-                <div className="mt-auto flex items-center justify-between pt-6 border-t border-[var(--border)]">
-                   <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse" />
-                     <span className="text-[10px] text-[var(--muted)] font-black uppercase tracking-widest">{item.date}</span>
-                   </div>
-                   <button className="w-10 h-10 bg-[var(--accent)] text-[var(--muted)] hover:text-[var(--primary)] rounded-xl flex items-center justify-center transition-all active:scale-90 group-hover:shadow-[var(--primary)]/20">
-                      <Bookmark className="w-5 h-5 fill-current opacity-20 group-hover:opacity-100" />
-                   </button>
-                </div>
-              </motion.div>
-            ))}
-            {news.length === 0 && (
-              <div className="col-span-full py-20 text-center opacity-40">
-                <p className="text-[10px] font-black uppercase tracking-widest">No primary transmissions found</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="col-span-12 lg:col-span-3 space-y-10">
+        {/* Header */}
+        <div className="flex items-center justify-between pt-2">
           <div>
-            <h2 className="text-[10px] font-black mb-8 text-[var(--muted)] uppercase tracking-[0.3em] opacity-60">Trending Nodes</h2>
-            <div className="space-y-4">
-              {[
-                { title: "Campus WiFi Updates", desc: "Digital infrastructure expansion project starts next month across all halls..." },
-                { title: "New Student Union", desc: "Modern student hub featuring collaborative zones and VR learning station..." },
-                { title: "Top 5 Study Apps", desc: "A guide to the most effective academic tools for the upcoming finals..." },
-                { title: "Neural Link Access", desc: "Beta testing for the new brain-computer interface opens next Friday..." }
-              ].map((trend, i) => (
-                <motion.div 
-                  whileHover={{ x: 5 }}
-                  key={i} 
-                  className="p-6 rounded-3xl bg-[var(--card)]/50 border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--accent)]/30 transition-all cursor-pointer shadow-lg group relative overflow-hidden"
-                >
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-[var(--primary)] translate-x-full group-hover:translate-x-0 transition-transform" />
-                  <h4 className="text-xs font-black text-[var(--foreground)] mb-2 group-hover:text-[var(--primary)] uppercase tracking-tight">{trend.title}</h4>
-                  <p className="text-[10px] text-[var(--muted)] leading-relaxed font-black uppercase tracking-tighter opacity-60">{trend.desc}</p>
-                </motion.div>
-              ))}
-            </div>
+            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Campus News</h1>
+            <p className="text-xs text-[var(--muted)] mt-0.5">{news.length} article{news.length !== 1 ? 's' : ''} from Elizade University</p>
           </div>
-          
-          <Card className="bg-[var(--primary)] border-none text-white p-8 overflow-hidden relative group">
-             <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
-             <div className="relative z-10">
-               <h3 className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-4">Ad Node</h3>
-               <p className="text-xl font-black tracking-tighter uppercase mb-6">Upgrade to Core Pro for unlimited data sync</p>
-               <Button className="w-full bg-white text-[var(--primary)] hover:bg-white/90 font-black uppercase tracking-widest text-[10px] py-3 rounded-xl border-none">Initialize Upgrade</Button>
-             </div>
-          </Card>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live
+          </span>
+        </div>
+
+        {/* Category filters */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {categories.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={cn('shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all',
+                activeCategory === cat
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-16 text-center">
+            <Tag className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
+            <p className="text-sm text-[var(--muted)] opacity-40">No articles in this category</p>
+          </div>
+        )}
+
+        {/* Featured article (first) */}
+        {filtered.length > 0 && (
+          <motion.div key={filtered[0].id}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="group bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-md transition-all cursor-pointer">
+            <div className="relative aspect-video overflow-hidden bg-[var(--input)]">
+              <img src={filtered[0].image} alt={filtered[0].title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute top-3 left-3">
+                <span className="text-[11px] font-bold text-white bg-[var(--primary)] px-2.5 py-1 rounded-lg">
+                  {filtered[0].category}
+                </span>
+              </div>
+              <div className="absolute bottom-3 left-4 right-4">
+                <h2 className="text-[16px] font-bold text-white leading-snug line-clamp-2">{filtered[0].title}</h2>
+              </div>
+            </div>
+            <div className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+                <Clock className="w-3.5 h-3.5" />
+                {filtered[0].date}
+              </div>
+              <button onClick={e => { e.stopPropagation(); setSaved(prev => prev.includes(filtered[0].id) ? prev.filter(id => id !== filtered[0].id) : [...prev, filtered[0].id]); }}
+                className={cn('p-1.5 rounded-lg transition-all', saved.includes(filtered[0].id) ? 'text-[var(--primary)]' : 'text-[var(--muted)] hover:text-[var(--primary)]')}>
+                <Bookmark className={cn('w-4 h-4', saved.includes(filtered[0].id) ? 'fill-current' : '')} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Article grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {filtered.slice(1).map((item, i) => (
+            <motion.div key={item.id}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              className="group bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-sm transition-all cursor-pointer">
+              <div className="relative h-36 overflow-hidden bg-[var(--input)]">
+                <img src={item.image} alt={item.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <div className="absolute top-2 left-2">
+                  <span className="text-[10px] font-bold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-md">
+                    {item.category}
+                  </span>
+                </div>
+              </div>
+              <div className="p-3.5">
+                <h3 className="text-[13px] font-semibold text-[var(--foreground)] line-clamp-2 mb-2 leading-snug group-hover:text-[var(--primary)] transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-[11px] text-[var(--muted)] line-clamp-2 mb-3">{item.excerpt}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--muted)] flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {item.date}
+                  </span>
+                  <button onClick={e => { e.stopPropagation(); setSaved(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]); }}
+                    className={cn('p-1 rounded-lg transition-all', saved.includes(item.id) ? 'text-[var(--primary)]' : 'text-[var(--muted)] hover:text-[var(--primary)]')}>
+                    <Bookmark className={cn('w-3.5 h-3.5', saved.includes(item.id) ? 'fill-current' : '')} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>

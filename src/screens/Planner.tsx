@@ -1,9 +1,10 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDialog } from '../components/Dialog';
 import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
-import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar, ChevronRight, ArrowLeft, Target, BarChart3 } from 'lucide-react';
+import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar } from 'lucide-react';
 import { getStudyPlans, createStudyPlan, deleteStudyPlan } from '../services/planner';
 import { StudyPlan } from '../types';
 
@@ -69,16 +70,17 @@ export const Planner = () => {
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<StudyPlan | null>(null);
+  const { show: showDialog } = useDialog();
 
   useEffect(() => {
     getStudyPlans().then(setPlans).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this plan?')) return;
+    const ok = await showDialog({ title: 'Delete Plan', message: 'Remove this study plan permanently?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try { await deleteStudyPlan(id); setPlans(prev => prev.filter(p => p.id !== id)); }
-    catch { alert('Failed to delete plan'); }
+    catch { showDialog({ type: 'error', message: 'Failed to delete plan.' }); }
   };
 
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);
@@ -255,19 +257,15 @@ export const Planner = () => {
           <div className="space-y-3">
             {plans.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                onClick={() => setSelectedPlan(plan)}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all group cursor-pointer">
+                className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all group">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0 mr-3">
                     <h3 className="text-[14px] font-semibold text-[var(--foreground)] truncate">{plan.name}</h3>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <ChevronRight className="w-4 h-4 text-[var(--muted)] opacity-40 group-hover:opacity-100 group-hover:text-[var(--primary)] transition-all" />
-                    <button onClick={e => { e.stopPropagation(); handleDelete(plan.id); }}
-                      className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button onClick={() => handleDelete(plan.id)}
+                    className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
                 {/* Progress bar */}
