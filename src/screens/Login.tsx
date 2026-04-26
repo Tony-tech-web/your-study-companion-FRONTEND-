@@ -47,7 +47,12 @@ export const Login = () => {
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (error.message?.toLowerCase().includes('invalid login') || error.message?.includes('Email not confirmed')) {
+            throw new Error('Invalid email or password. If you just signed up, please check your email and confirm your account first.');
+          }
+          throw error;
+        }
         router.push('/');
       } else {
         if (!fullName || !username) { setError('Please fill in all required fields'); setLoading(false); return; }
@@ -57,7 +62,12 @@ export const Login = () => {
         });
         if (error) throw error;
         if (data.session) router.push('/');
-        else { setError('Account created! Check your email to confirm before signing in.'); setMode('login'); }
+        else { 
+            setError(''); 
+            setMode('login');
+            // Show success state
+            setTimeout(() => setError('✅ Account created! Check your inbox and confirm your email before signing in.'), 100);
+          }
       }
     } catch (e: any) {
       setError(e.message || 'An error occurred');
