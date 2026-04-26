@@ -13,6 +13,7 @@ import { extractPdfText } from '../lib/pdfExtractor';
 import { getAIConversations, saveAIConversation, clearAIConversations, AIConversationEntry } from '../services/ai';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useDialog } from '../components/Dialog';
 
 const cleanText = (t: string) => t.replace(/\{\{[^}]+\}\}/g, '').trim();
 
@@ -339,6 +340,7 @@ const LibraryPanel = ({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const AIAssistant = () => {
   const { user } = useAuth();
+  const { show: showDialog } = useDialog();
   const [messages, setMessages] = useState<AIConversationEntry[]>([]);
   const [streamingMsg, setStreamingMsg] = useState('');
   const [input, setInput] = useState('');
@@ -582,11 +584,12 @@ export const AIAssistant = () => {
   };
 
   const handleClear = async () => {
-    if (!confirm('Clear all conversation history?')) return;
+    const ok = await showDialog({ title: 'Clear History', message: 'Permanently delete all conversation history?', confirmLabel: 'Clear', destructive: true });
+    if (!ok) return;
     try {
       await clearAIConversations();
       setMessages([{ id: 'initial', role: 'assistant', content: "Logs cleared. Orbit ready.", created_at: new Date().toISOString() }]);
-    } catch { alert('Failed to clear'); }
+    } catch { showDialog({ type: 'error', message: 'Failed to clear history.' }); }
   };
 
   const modeConfig = {

@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Check, X, Lightbulb, Code2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDialog } from '../components/Dialog';
 import { cn } from '../lib/utils';
 import { searchResearch, getResearchHistory, deleteResearchEntry, SearchResult, ResearchSearchResult } from '../services/research';
 import { updateXP } from '../lib/supabase';
@@ -53,9 +54,12 @@ export const Research = () => {
     } finally { setSearching(false); }
   };
 
+  const { show: showDialog } = useDialog();
   const handleDelete = async (id: string) => {
+    const ok = await showDialog({ title: 'Delete Search', message: 'Remove this search from history?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try { await deleteResearchEntry(id); setHistory(prev => prev.filter(h => h.id !== id)); }
-    catch { alert('Failed to delete'); }
+    catch { showDialog({ type: 'error', message: 'Failed to delete.' }); }
   };
 
   const getCitation = (r: SearchResult) => {
@@ -74,7 +78,7 @@ export const Research = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-5xl mx-auto w-full p-4 sm:p-6 space-y-4 sm:space-y-5">
+      <div className="max-w-5xl mx-auto p-6 space-y-5">
 
         {/* Header */}
         <div className="flex items-center justify-between pt-2">

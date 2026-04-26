@@ -7,6 +7,7 @@ import { getGPARecords, createGPARecord, deleteGPARecord } from '../services/gpa
 import { GPARecord } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDialog } from '../components/Dialog';
 
 const classify = (gpa: number) => {
   if (gpa >= 4.5) return 'First Class';
@@ -86,15 +87,17 @@ export const GPA = () => {
   const [records, setRecords] = useState<GPARecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const { show: showDialog } = useDialog();
 
   useEffect(() => {
     getGPARecords().then(setRecords).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this record?')) return;
+    const ok = await showDialog({ title: 'Delete Record', message: 'Remove this GPA record permanently?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try { await deleteGPARecord(id); setRecords(prev => prev.filter(r => r.id !== id)); }
-    catch { alert('Failed to delete'); }
+    catch { showDialog({ type: 'error', message: 'Failed to delete record.' }); }
   };
 
   const chartData = [...records].reverse().map((r, i) => ({ sem: r.semester?.split(' ').slice(-2).join(' ') || `Sem ${i + 1}`, gpa: Number(r.gpa) }));

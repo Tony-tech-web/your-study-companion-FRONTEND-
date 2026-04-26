@@ -1,11 +1,12 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import { Upload, Search, FileText, Trash2, Loader2, X, BookOpen, Clock } from 'lucide-react';
+import { Upload, Search, FileText, Trash2, Loader2, X, BookOpen, Clock, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useDialog } from '../components/Dialog';
 
 interface PDF { id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string; }
 
@@ -23,6 +24,7 @@ const formatDate = (dateStr: string) => {
 
 export const Courses = () => {
   const { user } = useAuth();
+  const { show: showDialog } = useDialog();
   const [pdfs, setPdfs] = useState<PDF[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -82,14 +84,13 @@ export const Courses = () => {
   };
 
   const handleDelete = async (pdf: PDF) => {
-    if (!confirm(`Delete "${pdf.file_name}"?`)) return;
+    const ok = await showDialog({ title: 'Delete PDF', message: `Remove "${pdf.file_name}" from your library? This cannot be undone.`, confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try {
-      // Delete from storage
       await supabase.storage.from('student-pdfs').remove([pdf.file_path]);
-      // Delete from database
       await api.delete(`/api/pdfs/${pdf.id}`);
       setPdfs(prev => prev.filter(p => p.id !== pdf.id));
-    } catch { alert('Failed to delete'); }
+    } catch { showDialog({ type: 'error', message: 'Failed to delete PDF.' }); }
   };
 
   const filtered = pdfs.filter(p => !query || p.file_name.toLowerCase().includes(query.toLowerCase()));
@@ -223,11 +224,3 @@ export const Courses = () => {
   );
 };
 
-// Need to add Sparkles import
-function Sparkles({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-    </svg>
-  );
-}

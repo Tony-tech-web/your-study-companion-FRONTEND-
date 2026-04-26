@@ -1,9 +1,10 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDialog } from '../components/Dialog';
 import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
-import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar, ChevronRight, ArrowLeft, Target, BarChart3 } from 'lucide-react';
+import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar } from 'lucide-react';
 import { getStudyPlans, createStudyPlan, deleteStudyPlan } from '../services/planner';
 import { StudyPlan } from '../types';
 
@@ -69,142 +70,23 @@ export const Planner = () => {
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<StudyPlan | null>(null);
+  const { show: showDialog } = useDialog();
 
   useEffect(() => {
     getStudyPlans().then(setPlans).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this plan?')) return;
+    const ok = await showDialog({ title: 'Delete Plan', message: 'Remove this study plan permanently?', confirmLabel: 'Delete', destructive: true });
+    if (!ok) return;
     try { await deleteStudyPlan(id); setPlans(prev => prev.filter(p => p.id !== id)); }
-    catch { alert('Failed to delete plan'); }
+    catch { showDialog({ type: 'error', message: 'Failed to delete plan.' }); }
   };
 
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);
   const avgProgress = plans.length ? Math.round(plans.reduce((a, p) => a + p.progress, 0) / plans.length) : 0;
 
   if (loading) return <ListSkeleton rows={3} />;
-
-
-  // Plan detail panel
-  if (selectedPlan) return (
-    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-4xl mx-auto p-6 space-y-5">
-        {/* Back header */}
-        <div className="flex items-center gap-3 pt-2">
-          <button onClick={() => setSelectedPlan(null)}
-            className="p-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight truncate">{selectedPlan.name}</h1>
-            <p className="text-xs text-[var(--muted)] mt-0.5">Plan details</p>
-          </div>
-          <button onClick={() => { handleDelete(selectedPlan.id); setSelectedPlan(null); }}
-            className="p-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-red-500 hover:border-red-500/30 transition-all">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Total Hours', value: `${selectedPlan.totalHours}h`, icon: Clock, color: '#6366f1' },
-            { label: 'Subjects', value: String(selectedPlan.subjects.length), icon: BookOpen, color: '#10b981' },
-            { label: 'Progress', value: `${selectedPlan.progress}%`, icon: BarChart3, color: 'var(--primary)' },
-          ].map(s => (
-            <div key={s.label} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: `${s.color}18` }}>
-                <s.icon className="w-3.5 h-3.5" style={{ color: s.color }} />
-              </div>
-              <p className="text-2xl font-bold text-[var(--foreground)] tracking-tight">{s.value}</p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-[var(--foreground)]">Overall Progress</p>
-            <span className="text-sm font-bold text-[var(--primary)]">{selectedPlan.progress}%</span>
-          </div>
-          <div className="h-3 bg-[var(--input)] rounded-full overflow-hidden border border-[var(--border)]">
-            <motion.div className="h-full rounded-full" style={{ backgroundColor: 'var(--primary)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${selectedPlan.progress}%` }}
-              transition={{ duration: 0.8, ease: 'circOut' }} />
-          </div>
-          <p className="text-[11px] text-[var(--muted)] mt-2">
-            {selectedPlan.progress === 0 ? 'Not started' : selectedPlan.progress < 50 ? 'In progress' : selectedPlan.progress < 100 ? 'More than halfway there!' : 'Completed!'}
-          </p>
-        </div>
-
-        {/* Subjects */}
-        {selectedPlan.subjects.length > 0 && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)] mb-3">Subjects</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {selectedPlan.subjects.map((subject, i) => (
-                <div key={i} className="flex items-center gap-2.5 p-3 bg-[var(--input)] border border-[var(--border)] rounded-xl">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${['#6366f1','#10b981','var(--primary)','#8b5cf6','#f59e0b','#ef4444'][i % 6]}18` }}>
-                    <BookOpen className="w-3 h-3" style={{ color: ['#6366f1','#10b981','var(--primary)','#8b5cf6','#f59e0b','#ef4444'][i % 6] }} />
-                  </div>
-                  <span className="text-[12px] font-medium text-[var(--foreground)] truncate">{subject}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Hours breakdown (estimated) */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)] mb-3">Estimated Hours Per Subject</p>
-          {selectedPlan.subjects.length > 0 ? (
-            <div className="space-y-2.5">
-              {selectedPlan.subjects.map((subject, i) => {
-                const hours = Math.round(selectedPlan.totalHours / selectedPlan.subjects.length * 10) / 10;
-                const pct = 100 / selectedPlan.subjects.length;
-                const colors = ['#6366f1','#10b981','var(--primary)','#8b5cf6','#f59e0b','#ef4444'];
-                const color = colors[i % colors.length];
-                return (
-                  <div key={i}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[12px] font-medium text-[var(--foreground)]">{subject}</span>
-                      <span className="text-[11px] text-[var(--muted)]">{hours}h</span>
-                    </div>
-                    <div className="h-1.5 bg-[var(--input)] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-[var(--muted)] opacity-40">No subjects added</p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)] mb-3">Actions</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--border)] text-[12px] font-medium text-[var(--muted)] hover:bg-[var(--accent)] transition-all">
-              <Target className="w-3.5 h-3.5" /> Set Goal
-            </button>
-            <button
-              onClick={() => { setShowModal(true); setSelectedPlan(null); }}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold text-white hover:opacity-90 transition-all"
-              style={{ backgroundColor: 'var(--primary)' }}>
-              <Plus className="w-3.5 h-3.5" /> New Plan
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
@@ -255,19 +137,15 @@ export const Planner = () => {
           <div className="space-y-3">
             {plans.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                onClick={() => setSelectedPlan(plan)}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all group cursor-pointer">
+                className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all group">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0 mr-3">
                     <h3 className="text-[14px] font-semibold text-[var(--foreground)] truncate">{plan.name}</h3>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <ChevronRight className="w-4 h-4 text-[var(--muted)] opacity-40 group-hover:opacity-100 group-hover:text-[var(--primary)] transition-all" />
-                    <button onClick={e => { e.stopPropagation(); handleDelete(plan.id); }}
-                      className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button onClick={() => handleDelete(plan.id)}
+                    className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
                 {/* Progress bar */}
