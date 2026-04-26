@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useDialog } from '../components/Dialog';
 import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
-import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar } from 'lucide-react';
+import { Clock, Plus, Loader2, Trash2, BookOpen, X, Calendar, ArrowLeft, BarChart3, Target } from 'lucide-react';
 import { getStudyPlans, createStudyPlan, deleteStudyPlan } from '../services/planner';
 import { StudyPlan } from '../types';
 
@@ -70,6 +70,7 @@ export const Planner = () => {
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<StudyPlan | null>(null);
   const { show: showDialog } = useDialog();
 
   useEffect(() => {
