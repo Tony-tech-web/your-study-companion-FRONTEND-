@@ -61,7 +61,7 @@ export const Login = () => {
           options: { data: { full_name: fullName, username, matric_number: matricNumber } }
         });
         if (error) throw error;
-        if (data.session) router.push('/');
+        if (data.session) router.push('/dashboard');
         else { 
             setError(''); 
             setMode('login');

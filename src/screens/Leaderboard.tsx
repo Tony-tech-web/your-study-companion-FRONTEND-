@@ -21,7 +21,17 @@ export const Leaderboard = () => {
   }, []);
 
   if (loading) return <ListSkeleton rows={8} />;
-  if (error || !result) return <div className="flex-1 flex items-center justify-center bg-[var(--background)]"><p className="text-sm text-[var(--muted)]">{error || 'No data'}</p></div>;
+  if (error || !result) return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-[var(--background)] gap-3 p-8">
+      <Trophy className="w-12 h-12 text-[var(--muted)] opacity-20" />
+      <p className="text-sm font-semibold text-[var(--foreground)]">Leaderboard unavailable</p>
+      <p className="text-xs text-[var(--muted)] text-center max-w-xs opacity-60">{error || 'No data'}</p>
+      <button onClick={() => { setLoading(true); setError(null); getLeaderboard().then(setResult).catch(e => setError(e.message)).finally(() => setLoading(false)); }}
+        className="mt-2 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: 'var(--primary)' }}>
+        Try Again
+      </button>
+    </div>
+  );
 
   const { entries, myRank } = result;
   const top3 = entries.slice(0, 3);
