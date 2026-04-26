@@ -53,7 +53,7 @@ export const Login = () => {
           }
           throw error;
         }
-        router.push('/');
+        router.push('/dashboard');
       } else {
         if (!fullName || !username) { setError('Please fill in all required fields'); setLoading(false); return; }
         const { data, error } = await supabase.auth.signUp({

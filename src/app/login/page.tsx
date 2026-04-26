@@ -12,7 +12,7 @@ export default function Page() {
   useEffect(() => {
     // If already authenticated, skip login
     if (!loading && user) {
-      router.replace('/');
+      router.replace('/dashboard');
     }
   }, [user, loading, router]);
 
