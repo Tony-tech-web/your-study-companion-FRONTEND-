@@ -38,7 +38,7 @@ export const Dashboard = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] custom-scrollbar">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5 pb-28 lg:pb-8">
 
         {/* Header */}
         <div className="flex items-center justify-between pt-2">
