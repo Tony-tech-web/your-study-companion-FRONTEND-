@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Send, Sparkles, Loader2, Trash2, Activity, ChevronDown, Check,
   BookOpen, Brain, FlaskConical, X, FileText, BookMarked,
-  Layers, ListChecks, AlignLeft, HelpCircle, ChevronRight,
+  Layers, ListChecks, AlignLeft, ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';

@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { Upload, Search, FileText, Trash2, Loader2, X, BookOpen, Clock, Sparkles } from 'lucide-react';
+import { ListSkeleton } from '../components/Skeleton';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
@@ -158,7 +159,7 @@ export const Courses = () => {
 
         {/* PDF List */}
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-[var(--primary)]" /></div>
+          <ListSkeleton rows={4} />
         ) : filtered.length === 0 ? (
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-12 text-center">
             <BookOpen className="w-10 h-10 text-[var(--muted)] opacity-20 mx-auto mb-3" />
