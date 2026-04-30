@@ -439,11 +439,13 @@ export const AIAssistant = () => {
           }
         }
         setStreaming('');
-        setMessages(prev => [...prev, await saveAIConversation('assistant', cleanText(full) || 'No response.')]);
+        const aiMsg1 = await saveAIConversation('assistant', cleanText(full) || 'No response.');
+        setMessages(prev => [...prev, aiMsg1]);
       } else {
         const data = await res.json();
         setStreaming('');
-        setMessages(prev => [...prev, await saveAIConversation('assistant', cleanText(data.text || data.reply || data.message || 'No response.'))]);
+        const aiMsg2 = await saveAIConversation('assistant', cleanText(data.text || data.reply || data.message || 'No response.'));
+        setMessages(prev => [...prev, aiMsg2]);
       }
       await updateXP('ai_chat');
     } catch (err: any) {
