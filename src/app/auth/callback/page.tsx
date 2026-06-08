@@ -41,12 +41,12 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4">
-      <div className="w-10 h-10 rounded-2xl bg-[#f27d26] flex items-center justify-center shadow-lg shadow-orange-500/30">
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-[var(--shadow-soft)]">
+        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
       </div>
-      <Loader2 className="w-5 h-5 text-[#f27d26] animate-spin" />
+      <Loader2 className="w-5 h-5 text-white animate-spin" />
       <p className="text-sm text-zinc-400 font-medium">Completing sign in...</p>
     </div>
   );

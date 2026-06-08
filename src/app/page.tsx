@@ -40,7 +40,7 @@ const FadeUp = ({ children, delay = 0, className = '' }: { children: React.React
 const features = [
   { icon: Brain,          label: 'AI Tutor',        desc: 'Learn from your PDFs with Orbit AI — teach mode explains concepts, test mode quizzes you.', color: '#6366f1' },
   { icon: BarChart3,      label: 'GPA Tracker',     desc: 'Log every semester, visualise your academic trajectory, and get your cumulative GPA instantly.', color: '#10b981' },
-  { icon: Search,         label: 'Research Engine', desc: 'Live Serper-powered scholarly search with AI-generated insights, research gaps, and citation export.', color: '#f27d26' },
+  { icon: Search,         label: 'Research Engine', desc: 'Live Serper-powered scholarly search with AI-generated insights, research gaps, and citation export.', color: '#4da3ff' },
   { icon: BookOpen,       label: 'PDF Library',     desc: 'Upload course materials. Orbit extracts the text and makes it context for your AI sessions.', color: '#8b5cf6' },
   { icon: Trophy,         label: 'Leaderboard',     desc: 'Earn XP for every study session, AI interaction, and quiz. Compete with your university cohort.', color: '#eab308' },
   { icon: MessageSquare,  label: 'Campus Chat',     desc: 'Real-time peer messaging with your university community, built for academic collaboration.', color: '#ec4899' },
@@ -76,7 +76,7 @@ const StatsSection = () => {
 };
 
 // Floating orbit animation
-const FloatingOrb = ({ delay = 0, size = 300, x = 0, y = 0, color = '#f27d26' }: any) => (
+const FloatingOrb = ({ delay = 0, size = 300, x = 0, y = 0, color = '#ffffff' }: any) => (
   <motion.div
     animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
     transition={{ duration: 6 + delay, repeat: Infinity, ease: 'easeInOut', delay }}
@@ -95,8 +95,8 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-12 h-16 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#f27d26] flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <Zap className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[var(--shadow-soft)]">
+            <Zap className="w-4 h-4 text-black" />
           </div>
           <span className="text-[15px] font-black tracking-tight">Orbit</span>
         </div>
@@ -107,7 +107,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-[13px] font-semibold text-white/60 hover:text-white transition-colors">Sign in</Link>
-          <Link href="/login" className="flex items-center gap-1.5 bg-[#f27d26] text-white text-[13px] font-bold px-4 py-2 rounded-xl hover:opacity-90 btn-spring shadow-lg shadow-orange-500/20">
+          <Link href="/login" className="flex items-center gap-1.5 bg-white text-black text-[13px] font-bold px-4 py-2 rounded-full hover:bg-white/90 btn-spring shadow-[var(--shadow-soft)]">
             Get Started <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -115,7 +115,7 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden pt-16">
-        <FloatingOrb size={600} x={-100} y={-100} color="#f27d26" />
+        <FloatingOrb size={600} x={-100} y={-100} color="#ffffff" />
         <FloatingOrb size={400} x="60%" y="20%" color="#6366f1" delay={2} />
         <FloatingOrb size={300} x="10%" y="60%" color="#10b981" delay={4} />
 
@@ -130,7 +130,7 @@ export default function LandingPage() {
             className="text-5xl lg:text-7xl font-black tracking-tight leading-[1.05] mb-6">
             Your Academic
             <br />
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #f27d26, #f59e0b)' }}>
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #ffffff, #4da3ff)' }}>
               OS, Upgraded.
             </span>
           </motion.h1>
@@ -144,7 +144,7 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/login"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#f27d26] text-white font-bold px-8 py-3.5 rounded-2xl hover:opacity-90 btn-spring shadow-2xl shadow-orange-500/25 text-[15px]">
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-black font-bold px-8 py-3.5 rounded-full hover:bg-white/90 btn-spring shadow-[var(--shadow-floating)] text-[15px]">
               Start for free <ArrowRight className="w-4 h-4" />
             </Link>
             <a href="#features"
@@ -159,7 +159,7 @@ export default function LandingPage() {
             <div className="flex -space-x-2">
               {['E', 'A', 'O', 'T', 'I'].map((l, i) => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-[#09090b] flex items-center justify-center text-[11px] font-black"
-                  style={{ backgroundColor: ['#f27d26', '#6366f1', '#10b981', '#eab308', '#ec4899'][i] }}>
+                  style={{ backgroundColor: ['#ffffff', '#4da3ff', '#00d26a', '#eab308', '#ec4899'][i], color: i === 0 ? '#0a0a0a' : '#ffffff' }}>
                   {l}
                 </div>
               ))}
@@ -191,7 +191,7 @@ export default function LandingPage() {
               {/* Dashboard preview */}
               <div className="p-6 grid grid-cols-4 gap-3 opacity-90">
                 {[
-                  { label: 'Neural Progress', value: '73%', color: '#f27d26' },
+                  { label: 'Neural Progress', value: '73%', color: '#ffffff' },
                   { label: 'Current GPA', value: '4.52', color: '#10b981' },
                   { label: 'AI Sessions', value: '142', color: '#6366f1' },
                   { label: 'Study Time', value: '48h', color: '#8b5cf6' },
@@ -205,13 +205,13 @@ export default function LandingPage() {
                   <p className="text-[9px] text-white/40 uppercase tracking-wider mb-3">Activity</p>
                   <div className="flex items-end gap-1.5 h-12">
                     {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, backgroundColor: '#f27d26', opacity: 0.6 + (i * 0.06) }} />
+                      <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, backgroundColor: '#ffffff', opacity: 0.45 + (i * 0.06) }} />
                     ))}
                   </div>
                 </div>
                 <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-full border-4 border-[#f27d26]/30 flex items-center justify-center">
-                    <p className="text-xs font-bold text-[#f27d26]">73%</p>
+                  <div className="w-12 h-12 rounded-full border-4 border-white/30 flex items-center justify-center">
+                    <p className="text-xs font-bold text-white">73%</p>
                   </div>
                   <p className="text-[9px] text-white/30 mt-1">Level 3</p>
                 </div>
@@ -238,7 +238,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <FadeUp>
             <div className="text-center mb-16">
-              <p className="text-[12px] font-bold text-[#f27d26] uppercase tracking-[0.2em] mb-3">Everything you need</p>
+              <p className="text-[12px] font-bold text-white uppercase tracking-[0.2em] mb-3">Everything you need</p>
               <h2 className="text-4xl lg:text-5xl font-black tracking-tight mb-4">Built for serious students</h2>
               <p className="text-[16px] text-white/40 max-w-xl mx-auto">
                 Every feature is designed around how university students actually study, research, and collaborate.
@@ -270,7 +270,7 @@ export default function LandingPage() {
       <section className="py-28 px-6 bg-[#0f0f12] border-y border-white/5" id="about">
         <div className="max-w-4xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-[12px] font-bold text-[#f27d26] uppercase tracking-[0.2em] mb-3">Simple by design</p>
+            <p className="text-[12px] font-bold text-white uppercase tracking-[0.2em] mb-3">Simple by design</p>
             <h2 className="text-4xl lg:text-5xl font-black tracking-tight">Up and running in seconds</h2>
           </FadeUp>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -285,7 +285,7 @@ export default function LandingPage() {
                     <div className="hidden md:block absolute top-7 left-full w-full h-px bg-gradient-to-r from-white/10 to-transparent z-10" />
                   )}
                   <div className="bg-[#111113] border border-white/8 rounded-2xl p-6">
-                    <p className="text-[11px] font-black text-[#f27d26] tracking-[0.3em] mb-4">{s.step}</p>
+                    <p className="text-[11px] font-black text-white tracking-[0.3em] mb-4">{s.step}</p>
                     <h3 className="text-[16px] font-bold text-white mb-2">{s.title}</h3>
                     <p className="text-[13px] text-white/40 leading-relaxed">{s.desc}</p>
                   </div>
@@ -298,10 +298,10 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section className="py-32 px-6 relative overflow-hidden">
-        <FloatingOrb size={500} x="20%" y="-20%" color="#f27d26" delay={1} />
+        <FloatingOrb size={500} x="20%" y="-20%" color="#ffffff" delay={1} />
         <FloatingOrb size={400} x="60%" y="30%" color="#6366f1" delay={3} />
         <FadeUp className="relative z-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-[#f27d26]/10 border border-[#f27d26]/20 rounded-full px-4 py-2 text-[12px] font-semibold text-[#f27d26] mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-[12px] font-semibold text-white mb-8">
             <Shield className="w-3.5 h-3.5" />
             Free for all Elizade University students
           </div>
@@ -312,7 +312,7 @@ export default function LandingPage() {
             Join your university on Orbit. No credit card. No setup fees. Just better results.
           </p>
           <Link href="/login"
-            className="inline-flex items-center gap-2 bg-[#f27d26] text-white font-bold px-10 py-4 rounded-2xl hover:opacity-90 btn-spring shadow-2xl shadow-orange-500/30 text-[16px]">
+            className="inline-flex items-center gap-2 bg-white text-black font-bold px-10 py-4 rounded-full hover:bg-white/90 btn-spring shadow-[var(--shadow-floating)] text-[16px]">
             Create your account <ArrowRight className="w-5 h-5" />
           </Link>
         </FadeUp>
@@ -322,8 +322,8 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 px-6 py-10" id="contact">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#f27d26] flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
+              <Zap className="w-3.5 h-3.5 text-black" />
             </div>
             <span className="text-[14px] font-black">Orbit</span>
           </div>

@@ -52,7 +52,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
   return (
     <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-        className="w-full max-w-sm bg-white dark:bg-[#111113] border border-zinc-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+        className="w-full max-w-sm glass-panel rounded-[28px] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-white/5">
           <div className="flex items-center gap-2.5">
             <div className={cn('w-2.5 h-2.5 rounded-full', online > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
@@ -63,7 +63,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={fetchStatus} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-400 transition-all">
-              <Loader2 className={cn('w-3.5 h-3.5', loading ? 'animate-spin text-[#f27d26]' : '')} />
+              <Loader2 className={cn('w-3.5 h-3.5', loading ? 'animate-spin text-white' : '')} />
             </button>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-400 transition-all">
               <X className="w-4 h-4" />
@@ -73,7 +73,7 @@ const APIStatusModal = ({ onClose }: { onClose: () => void }) => {
 
         <div className="p-3 space-y-1.5">
           {loading && providers.length === 0
-            ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[#f27d26]" /></div>
+            ? <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-white" /></div>
             : providers.map(p => {
                 const isOnline = p.status === 'connected';
                 return (
@@ -127,15 +127,15 @@ export const Sidebar = () => {
     <>
       {showStatus && <APIStatusModal onClose={() => setShowStatus(false)} />}
       <aside className={cn(
-        'hidden lg:flex flex-col h-screen shrink-0 border-r border-zinc-200 dark:border-white/5 bg-white dark:bg-[#111113] transition-[width] duration-200 ease-in-out overflow-hidden',
+        'hidden lg:flex flex-col h-screen shrink-0 border-r border-white/10 bg-black/35 backdrop-blur-[30px] transition-[width] duration-200 ease-in-out overflow-hidden shadow-[var(--shadow-deep)]',
         collapsed ? 'w-[60px]' : 'w-[220px]'
       )}>
         {/* Logo row */}
         <div className={cn('flex items-center h-14 px-3 border-b border-zinc-100 dark:border-white/5 shrink-0', collapsed ? 'justify-center' : 'justify-between')}>
           {!collapsed && (
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded-xl bg-[#f27d26] flex items-center justify-center shrink-0 shadow-md shadow-orange-500/30">
-                <Zap className="w-3.5 h-3.5 text-white" />
+              <div className="w-7 h-7 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-[var(--shadow-soft)]">
+                <Zap className="w-3.5 h-3.5 text-black" />
               </div>
               <span className="text-[13px] font-black tracking-tight text-zinc-900 dark:text-white uppercase">Orbit</span>
             </div>
@@ -154,7 +154,7 @@ export const Sidebar = () => {
                 className={cn('flex items-center gap-3 rounded-xl transition-all duration-150 group relative',
                   collapsed ? 'h-9 w-9 mx-auto justify-center' : 'h-9 px-2.5',
                   active
-                    ? 'bg-[#f27d26] text-white shadow-md shadow-orange-500/20'
+                    ? 'bg-white text-black shadow-[var(--shadow-soft)]'
                     : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5')}>
                 <item.icon className="w-4 h-4 shrink-0" />
                 {!collapsed && <span className="text-[13px] font-semibold">{item.label}</span>}
@@ -176,7 +176,7 @@ export const Sidebar = () => {
               <button key={v} onClick={() => setTheme(v)} title={v}
                 className={cn('flex items-center justify-center rounded-lg transition-all',
                   collapsed ? 'w-9 h-7' : 'flex-1 h-7',
-                  theme === v ? 'bg-[#f27d26] text-white' : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5')}>
+                  theme === v ? 'bg-white text-black' : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5')}>
                 <I className="w-3.5 h-3.5" />
               </button>
             ))}
@@ -192,7 +192,7 @@ export const Sidebar = () => {
 
           {/* User */}
           <div className={cn('flex items-center gap-2 rounded-xl px-1.5 py-1.5', collapsed ? 'justify-center' : '')}>
-            <div className="w-6 h-6 rounded-lg bg-[#f27d26] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm">
+            <div className="w-6 h-6 rounded-lg bg-white text-black flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm">
               {initials}
             </div>
             {!collapsed && (
@@ -225,10 +225,10 @@ export const MobileNav = () => {
   return (
     <>
       {showStatus && <APIStatusModal onClose={() => setShowStatus(false)} />}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white/90 dark:bg-[#111113]/90 backdrop-blur-xl border-b border-zinc-200 dark:border-white/5 flex items-center justify-between px-4 z-40" style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(3rem + env(safe-area-inset-top, 0px))" }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-black/60 backdrop-blur-[30px] border-b border-white/10 flex items-center justify-between px-4 z-40" style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(3rem + env(safe-area-inset-top, 0px))" }}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#f27d26] flex items-center justify-center shadow-sm">
-            <Zap className="w-3.5 h-3.5 text-white" />
+          <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-black" />
           </div>
           <span className="text-[13px] font-black text-zinc-900 dark:text-white uppercase tracking-tight">Orbit</span>
         </div>
@@ -244,11 +244,11 @@ export const MobileNav = () => {
               className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
             <motion.div initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-              className="relative w-64 h-full bg-white dark:bg-[#111113] border-r border-zinc-200 dark:border-white/5 flex flex-col shadow-2xl" style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))", paddingLeft: "0.75rem", paddingRight: "0.75rem" }}>
+              className="relative w-64 h-full bg-black/70 backdrop-blur-[30px] border-r border-white/10 flex flex-col shadow-2xl" style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))", paddingLeft: "0.75rem", paddingRight: "0.75rem" }}>
               <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-[#f27d26] flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 text-white" />
+                  <div className="w-7 h-7 rounded-xl bg-white flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 text-black" />
                   </div>
                   <span className="text-[13px] font-black text-zinc-900 dark:text-white uppercase">Orbit</span>
                 </div>
@@ -262,7 +262,7 @@ export const MobileNav = () => {
                   return (
                     <Link key={item.id} href={item.href} onClick={() => setOpen(false)}
                       className={cn('flex items-center gap-3 h-9 px-2.5 rounded-xl transition-all',
-                        active ? 'bg-[#f27d26] text-white' : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5')}>
+                        active ? 'bg-white text-black' : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5')}>
                       <item.icon className="w-4 h-4 shrink-0" />
                       <span className="text-[13px] font-semibold">{item.label}</span>
                     </Link>
@@ -274,7 +274,7 @@ export const MobileNav = () => {
                   {[{ v: 'light', I: Sun }, { v: 'dark', I: Moon }, { v: 'brown', I: Coffee }].map(({ v, I }) => (
                     <button key={v} onClick={() => setTheme(v)}
                       className={cn('flex-1 h-8 rounded-xl flex items-center justify-center transition-all',
-                        theme === v ? 'bg-[#f27d26] text-white' : 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5')}>
+                        theme === v ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5')}>
                       <I className="w-3.5 h-3.5" />
                     </button>
                   ))}

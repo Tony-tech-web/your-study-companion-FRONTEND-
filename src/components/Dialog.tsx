@@ -74,8 +74,8 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
                 <button onClick={confirm}
                   className={cn('w-full py-3 rounded-xl text-[14px] font-bold text-white btn-spring',
                     isDestructive ? 'bg-red-500 shadow-lg shadow-red-500/20' :
-                    type === 'success' ? 'bg-emerald-500' : 'shadow-lg shadow-orange-500/20')}
-                  style={!isDestructive && type !== 'success' ? { backgroundColor: '#f27d26' } : {}}>
+                    type === 'success' ? 'bg-emerald-500' : 'bg-white text-black shadow-[var(--shadow-soft)]')}
+                  style={{}}>
                   {dialog.confirmLabel || (isDestructive ? 'Delete' : isConfirm ? 'Confirm' : 'OK')}
                 </button>
                 {isConfirm && (
