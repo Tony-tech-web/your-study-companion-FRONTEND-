@@ -46,6 +46,13 @@
   --border: rgba(255,255,255,0.12);
   --input: rgba(255,255,255,0.05);
   --ring: #4da3ff;
+  --glass-bg: rgba(20,20,20,0.72);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-highlight: rgba(255,255,255,0.18);
+  --shadow-soft: 0 8px 32px rgba(0,0,0,0.25);
+  --shadow-deep: 0 12px 48px rgba(0,0,0,0.45);
+  --shadow-floating: 0 24px 80px rgba(0,0,0,0.5);
+  --inner-glow: inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 /* ── Warm theme ── */
@@ -61,6 +68,13 @@
   --border: rgba(255,245,235,0.13);
   --input: rgba(255,245,235,0.06);
   --ring: #f5efe7;
+  --glass-bg: rgba(24,20,15,0.74);
+  --glass-border: rgba(255,245,235,0.13);
+  --glass-highlight: rgba(255,245,235,0.18);
+  --shadow-soft: 0 8px 32px rgba(0,0,0,0.28);
+  --shadow-deep: 0 12px 48px rgba(0,0,0,0.48);
+  --shadow-floating: 0 24px 80px rgba(0,0,0,0.52);
+  --inner-glow: inset 0 1px 0 rgba(255,245,235,0.14);
 }
 
 * { box-sizing: border-box; }
