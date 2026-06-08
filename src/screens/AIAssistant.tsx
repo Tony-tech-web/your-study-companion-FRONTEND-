@@ -19,10 +19,13 @@ const stripDecorativeGlyphs = (t: string) =>
   t
     .replace(/[0-9#*]\ufe0f?\u20e3/g, '')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
-    .replace(/\s{2,}/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
 
 const cleanText = (t: string) => stripDecorativeGlyphs(t.replace(/\{\{[^}]+\}\}/g, ''));
+
+const AI_RESPONSE_STYLE =
+  'Use a mature academic tone. Use short headings, compact paragraphs, and bullets for comparisons. Do not use emoji, decorative glyphs, or markdown pipe tables unless the user explicitly asks for a table.';
 
 const friendlyAIError = (err: any) => {
   const raw = String(err?.message || err || '').trim();
@@ -64,6 +67,8 @@ const renderMarkdown = (text: string) => {
   const isTableDivider = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
   const splitTableRow = (line: string) =>
     line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+  const splitLoosePipeRow = (line: string) =>
+    line.split('|').map(cell => cell.trim()).filter(Boolean);
 
   const renderTable = (startIndex: number, tableLines: string[]) => {
     const header = splitTableRow(tableLines[0]);
@@ -129,14 +134,26 @@ const renderMarkdown = (text: string) => {
         const level = line.match(/^#{1,3}/)?.[0].length || 1;
         const heading = line.replace(/^#{1,3}\s+/, '');
         const headingClass = level === 1
-          ? 'mt-3 mb-1.5 text-[17px] font-black leading-snug font-display'
+          ? 'mt-3 mb-1.5 text-[17px] font-black leading-snug font-reading'
           : level === 2
-            ? 'mt-3 mb-1 text-[15px] font-black leading-snug font-display'
-            : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug font-display';
+            ? 'mt-3 mb-1 text-[15px] font-black leading-snug font-reading'
+            : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug font-reading';
         elements.push(<p key={i} className={`${headingClass} text-[var(--foreground)]`}>{parseBold(heading)}</p>);
+      } else if (line.includes('|') && splitLoosePipeRow(line).length >= 2 && !isTableDivider(line)) {
+        const cells = splitLoosePipeRow(line);
+        elements.push(
+          <div key={i} className="my-2 rounded-2xl border border-[var(--border)] bg-[var(--input)] px-3.5 py-3 font-reading">
+            <p className="text-[13px] font-black leading-6 text-[var(--foreground)]">{parseBold(cells[0])}</p>
+            <div className="mt-1 space-y-1">
+              {cells.slice(1).map((cell, cellIndex) => (
+                <p key={cellIndex} className="text-[13px] font-medium leading-6 text-[var(--muted)]">{parseBold(cell)}</p>
+              ))}
+            </div>
+          </div>
+        );
       } else {
         elements.push(
-          <p key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)]">
+          <p key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)] font-reading">
             {parseBold(line)}
           </p>
         );
@@ -547,7 +564,7 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, userMsg]);
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
       const res = await callEdgeFunction('ai-chat', {
-        messages: [...history, { role: 'user', content: userText }],
+        messages: [{ role: 'system', content: AI_RESPONSE_STYLE }, ...history, { role: 'user', content: userText }],
         providerId: autoSwitch ? 'auto' : model,
         mode: overrideMode ?? mode,
         ...(ctx ?? pdfContext ? { pdfContext: ctx ?? pdfContext } : {}),
@@ -599,7 +616,7 @@ export const AIAssistant = () => {
     const session: TeachSession = { pdfId: ready.pdfId, fileName: ready.fileName, pages: ready.pages, totalPages: ready.pageCount, currentBatch: 0, finished: false };
     setTeachSession(session);
     const batch = ready.pages.slice(0, BATCH_SIZE).join('\n\n');
-    await sendToAI(`Start a teach session for "${ready.fileName}" pages 1-${Math.min(BATCH_SIZE, ready.pageCount)}. Teach it like a mature university tutor: clear learning goals, plain explanation, examples, and one checkpoint question at the end. Do not use emoji or decorative numbered glyphs.`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
+    await sendToAI(`Start a teach session for "${ready.fileName}" pages 1-${Math.min(BATCH_SIZE, ready.pageCount)}. Teach it like a mature university tutor: clear learning goals, plain explanation, examples, and one checkpoint question at the end. Do not use emoji, decorative numbered glyphs, or markdown pipe tables.`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
   };
 
   // Teach: next batch
@@ -611,7 +628,7 @@ export const AIAssistant = () => {
     const batch = teachSession.pages.slice(start, end).join('\n\n');
     const finished = end >= teachSession.totalPages;
     setTeachSession(prev => prev ? { ...prev, currentBatch: next, finished } : prev);
-    await sendToAI(`Continue the teach session for "${teachSession.fileName}" pages ${start + 1}-${end}. Build on the previous lesson and end with a short checkpoint. Keep a mature academic tone and do not use emoji or decorative glyphs.`, 'teach', batch, { current: end, total: teachSession.totalPages });
+    await sendToAI(`Continue the teach session for "${teachSession.fileName}" pages ${start + 1}-${end}. Build on the previous lesson and end with a short checkpoint. Keep a mature academic tone and do not use emoji, decorative glyphs, or markdown pipe tables.`, 'teach', batch, { current: end, total: teachSession.totalPages });
   };
 
   // Test: start
@@ -629,7 +646,7 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'I could not read a selected PDF yet. Please try again after extraction finishes.', created_at: new Date().toISOString() }]);
       return;
     }
-    await sendToAI('Start a test session from the selected PDFs. Ask one question at a time, wait for my answer, then explain the correct answer before moving on. Do not use emoji or decorative glyphs.', 'test', context);
+    await sendToAI('Start a test session from the selected PDFs. Ask one question at a time, wait for my answer, then explain the correct answer before moving on. Do not use emoji, decorative glyphs, or markdown pipe tables.', 'test', context);
   };
 
   // End session
@@ -785,7 +802,7 @@ export const AIAssistant = () => {
                   </div>
                   <div className={cn('px-4 py-3 rounded-2xl max-w-[85%] shadow-sm',
                     msg.role === 'user' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-none text-sm' : 'bg-[var(--card)] border border-[var(--border)] rounded-tl-none')}>
-                    {msg.role === 'assistant' ? <div className="space-y-2 font-sans">{renderMarkdown(msg.content)}</div> : msg.content}
+                    {msg.role === 'assistant' ? <div className="space-y-2 font-reading">{renderMarkdown(msg.content)}</div> : <span className="font-reading">{msg.content}</span>}
                   </div>
                 </motion.div>
               ))}
@@ -797,7 +814,7 @@ export const AIAssistant = () => {
                   <Sparkles className="w-3.5 h-3.5 text-[var(--primary)] animate-pulse" />
                 </div>
                 <div className="px-4 py-3 rounded-2xl rounded-tl-none bg-[var(--card)] border border-[var(--primary)]/30 max-w-[85%]">
-                  <div className="space-y-2 font-sans">{renderMarkdown(streaming)}</div>
+                  <div className="space-y-2 font-reading">{renderMarkdown(streaming)}</div>
                   <span className="inline-block w-1 h-4 bg-[var(--primary)] animate-pulse ml-1 rounded-sm align-middle" />
                 </div>
               </motion.div>
