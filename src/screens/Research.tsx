@@ -40,6 +40,7 @@ export const Research = () => {
     if (filterMode === 'academic') return all.filter(r => !r.isGitHub);
     return all; // projects shows everything, GitHub sorted first already by edge fn
   }, [searchData, filterMode]);
+  const projectResults = useMemo(() => (searchData?.results || []).filter(r => r.isGitHub), [searchData]);
 
   const handleSearch = async () => {
     if (!query.trim() || searching) return;
@@ -102,7 +103,7 @@ export const Research = () => {
                 className="w-full bg-[var(--input)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
             </div>
             <button onClick={handleSearch} disabled={searching || !query.trim()}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
               style={{ backgroundColor: 'var(--primary)' }}>
               {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
             </button>
@@ -115,7 +116,7 @@ export const Research = () => {
             ]).map(({ key, label, icon: Icon }) => (
               <button key={key} onClick={() => setFilterMode(key)}
                 className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all',
-                  key === filterMode ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]')}>
+                  key === filterMode ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--input)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]')}>
                 <Icon className="w-3.5 h-3.5" />
                 {label}
               </button>
@@ -136,7 +137,7 @@ export const Research = () => {
                 ].map(t => (
                   <button key={t.key} onClick={() => setActiveTab(t.key)}
                     className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all',
-                      activeTab === t.key ? 'bg-[var(--primary)] text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]')}>
+                      activeTab === t.key ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]')}>
                     {t.label}
                   </button>
                 ))}
@@ -269,8 +270,50 @@ export const Research = () => {
             )}
           </div>
 
+          <div className="space-y-4 sticky top-0 self-start">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Code2 className="w-4 h-4 text-[var(--primary)]" />
+              <p className="text-[13px] font-semibold text-[var(--foreground)]">Saved Work</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Saved Research</p>
+                {history.length === 0 ? (
+                  <p className="text-[11px] text-[var(--muted)] opacity-45">No saved research yet</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {history.slice(0, 3).map(h => (
+                      <button key={h.id} onClick={() => { setQuery(h.title); inputRef.current?.focus(); }}
+                        className="w-full text-left rounded-lg bg-[var(--input)] border border-[var(--border)] px-3 py-2 hover:border-[var(--primary)]/40 transition-all">
+                        <span className="block text-[11px] font-semibold text-[var(--foreground)] truncate">{h.title}</span>
+                        <span className="block text-[10px] text-[var(--muted)] truncate">{h.abstract || 'Saved search'}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Project Results</p>
+                {projectResults.length === 0 ? (
+                  <p className="text-[11px] text-[var(--muted)] opacity-45">Search in Projects to collect live repository results</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {projectResults.slice(0, 3).map(r => (
+                      <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer"
+                        className="block rounded-lg bg-[var(--input)] border border-[var(--border)] px-3 py-2 hover:border-[var(--primary)]/40 transition-all">
+                        <span className="block text-[11px] font-semibold text-[var(--foreground)] truncate">{r.title}</span>
+                        <span className="block text-[10px] text-[var(--muted)] truncate">{r.source}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Citation panel */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 sticky top-0 self-start">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <BookOpen className="w-4 h-4 text-[var(--primary)]" />
               <p className="text-[13px] font-semibold text-[var(--foreground)]">Citation</p>
@@ -283,7 +326,7 @@ export const Research = () => {
                   {(['APA', 'MLA', 'CHI'] as const).map(f => (
                     <button key={f} onClick={() => setCitationFormat(f)}
                       className={cn('flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-all',
-                        citationFormat === f ? 'bg-[var(--primary)] text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]')}>
+                        citationFormat === f ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]')}>
                       {f}
                     </button>
                   ))}
@@ -292,7 +335,7 @@ export const Research = () => {
                   <p className="text-[11px] text-[var(--foreground)] leading-relaxed">{getCitation(selected)}</p>
                 </div>
                 <button onClick={handleCopy}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold text-white hover:opacity-90 active:scale-95 transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold text-[var(--primary-foreground)] hover:opacity-90 active:scale-95 transition-all"
                   style={{ backgroundColor: 'var(--primary)' }}>
                   {copied ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Citation</>}
                 </button>
@@ -306,6 +349,7 @@ export const Research = () => {
                 <p className="text-xs text-[var(--muted)] opacity-40">Select a result to generate a citation</p>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

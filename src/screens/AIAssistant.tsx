@@ -17,6 +17,21 @@ import { useDialog } from '../components/Dialog';
 
 const cleanText = (t: string) => t.replace(/\{\{[^}]+\}\}/g, '').trim();
 
+const friendlyAIError = (err: any) => {
+  const raw = String(err?.message || err || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes('insufficient_quota') || lower.includes('429') || lower.includes('quota')) {
+    return 'Orbit could not generate a response because the active AI provider is out of quota. Check the provider key or billing in Supabase, then try again.';
+  }
+  if (lower.includes('all ai providers failed') || lower.includes('provider')) {
+    return 'Orbit could not reach an available AI provider right now. Check API Status and the Supabase provider secrets.';
+  }
+  if (lower.includes('network') || lower.includes('failed to fetch')) {
+    return 'Orbit could not connect to the AI service. Please check the connection and try again.';
+  }
+  return 'Orbit could not generate a response. Please try again in a moment.';
+};
+
 const renderMarkdown = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
@@ -67,7 +82,7 @@ const PdfPickerModal = ({
   extractedPdfs: ExtractedPdf[];
   onClose: () => void;
   onConfirm: (selectedIds: string[]) => void;
-  onExtract: (pdf: StudentPdf) => void;
+  onExtract: (pdf: StudentPdf) => Promise<ExtractedPdf | null>;
 }) => {
   const [selected, setSelected] = useState<string[]>([]);
   const toggle = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -249,7 +264,7 @@ const StudyToolsPanel = ({ extractedPdfs, onClose }: { extractedPdfs: ExtractedP
           {tools.map(t => { const Icon = t.icon; return (
             <button key={t.id} onClick={() => { setTool(t.id); setResult(null); setError(''); }}
               className={cn('flex flex-col items-center gap-1 p-2 rounded-xl text-center transition-all',
-                tool === t.id ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] text-[var(--muted)] border border-[var(--border)]')}>
+                tool === t.id ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--input)] text-[var(--muted)] border border-[var(--border)]')}>
               <Icon className="w-4 h-4" />
               <span className="text-[10px] font-semibold">{t.label}</span>
             </button>
@@ -264,7 +279,7 @@ const StudyToolsPanel = ({ extractedPdfs, onClose }: { extractedPdfs: ExtractedP
         }
         {error && <p className="text-[11px] text-red-500 bg-red-500/10 rounded-xl p-2">{error}</p>}
         <button onClick={generate} disabled={generating || ready.length === 0}
-          className="w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
           style={{ backgroundColor: 'var(--primary)' }}>
           {generating ? <><Loader2 className="w-4 h-4 animate-spin" />Generating…</> : `Generate ${tools.find(t => t.id === tool)?.label}`}
         </button>
@@ -396,16 +411,23 @@ export const AIAssistant = () => {
 
   const fetchPdfs = async () => { try { setPdfs((await api.get('/api/pdfs')).data); } catch {} };
 
-  const extractPdf = async (pdf: StudentPdf) => {
+  const extractPdf = async (pdf: StudentPdf): Promise<ExtractedPdf | null> => {
+    const existing = extracted.find(e => e.pdfId === pdf.id && !e.extracting && e.text && e.pages.length > 0);
+    if (existing) return existing;
     setExtracted(prev => prev.find(e => e.pdfId === pdf.id) ? prev : [...prev, { pdfId: pdf.id, fileName: pdf.file_name, text: '', pages: [], pageCount: 0, extracting: true }]);
     try {
       const buf = await downloadStorageFile('student-pdfs', pdf.file_path);
       const result = await extractPdfText(buf, (cur, tot) => setScanProgress({ current: cur, total: tot }));
       setScanProgress(null);
-      setExtracted(prev => prev.map(e => e.pdfId === pdf.id ? { ...e, ...result, extracting: false } : e));
+      const next: ExtractedPdf = { pdfId: pdf.id, fileName: pdf.file_name, ...result, extracting: false };
+      setExtracted(prev => prev.some(e => e.pdfId === pdf.id)
+        ? prev.map(e => e.pdfId === pdf.id ? next : e)
+        : [...prev, next]);
+      return next;
     } catch (err: any) {
       setScanProgress(null);
       setExtracted(prev => prev.map(e => e.pdfId === pdf.id ? { ...e, extracting: false, error: err.message } : e));
+      return null;
     }
   };
 
@@ -450,7 +472,7 @@ export const AIAssistant = () => {
       await updateXP('ai_chat');
     } catch (err: any) {
       setStreaming('');
-      const errMsg = `Error: ${err.message || 'Neural link failed.'}`;
+      const errMsg = friendlyAIError(err);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: errMsg, created_at: new Date().toISOString() }]);
     } finally { setIsLoading(false); }
   };
@@ -458,17 +480,22 @@ export const AIAssistant = () => {
   // Teach: start with first batch
   const startTeach = async (pdfIds: string[]) => {
     setShowPdfPicker(null); setSelectedPdfIds(pdfIds); setMode('teach');
-    // Extract if needed
+    const loaded: ExtractedPdf[] = [];
     for (const id of pdfIds) {
       const pdf = pdfs.find(p => p.id === id);
-      if (pdf && !extracted.find(e => e.pdfId === id)) await extractPdf(pdf);
+      const current = extracted.find(e => e.pdfId === id && !e.extracting && e.pages.length > 0);
+      const readyPdf = current || (pdf ? await extractPdf(pdf) : null);
+      if (readyPdf?.pages.length) loaded.push(readyPdf);
     }
-    const ready = extracted.find(e => pdfIds.includes(e.pdfId) && e.pages.length > 0) || null;
-    if (!ready) return;
+    const ready = loaded[0] || null;
+    if (!ready) {
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'I could not read a selected PDF yet. Please try again after extraction finishes.', created_at: new Date().toISOString() }]);
+      return;
+    }
     const session: TeachSession = { pdfId: ready.pdfId, fileName: ready.fileName, pages: ready.pages, totalPages: ready.pageCount, currentBatch: 0, finished: false };
     setTeachSession(session);
     const batch = ready.pages.slice(0, BATCH_SIZE).join('\n\n');
-    await sendToAI(`Please teach me pages 1–${Math.min(BATCH_SIZE, ready.pageCount)} of "${ready.fileName}".`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
+    await sendToAI(`Start a teach session for "${ready.fileName}" pages 1-${Math.min(BATCH_SIZE, ready.pageCount)}. Teach it like a tutor: learning goals, plain explanation, examples, and one checkpoint question at the end.`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
   };
 
   // Teach: next batch
@@ -480,17 +507,25 @@ export const AIAssistant = () => {
     const batch = teachSession.pages.slice(start, end).join('\n\n');
     const finished = end >= teachSession.totalPages;
     setTeachSession(prev => prev ? { ...prev, currentBatch: next, finished } : prev);
-    await sendToAI(`Continue — pages ${start + 1}–${end} of "${teachSession.fileName}".`, 'teach', batch, { current: end, total: teachSession.totalPages });
+    await sendToAI(`Continue the teach session for "${teachSession.fileName}" pages ${start + 1}-${end}. Build on the previous lesson and end with a short checkpoint.`, 'teach', batch, { current: end, total: teachSession.totalPages });
   };
 
   // Test: start
   const startTest = async (pdfIds: string[]) => {
     setShowPdfPicker(null); setSelectedPdfIds(pdfIds); setMode('test');
+    const loaded: ExtractedPdf[] = [];
     for (const id of pdfIds) {
       const pdf = pdfs.find(p => p.id === id);
-      if (pdf && !extracted.find(e => e.pdfId === id)) await extractPdf(pdf);
+      const current = extracted.find(e => e.pdfId === id && !e.extracting && e.text);
+      const readyPdf = current || (pdf ? await extractPdf(pdf) : null);
+      if (readyPdf?.text) loaded.push(readyPdf);
     }
-    await sendToAI(`I'm ready to be tested on the content from the selected PDFs.`, 'test', pdfContext);
+    const context = loaded.map(e => `=== ${e.fileName} ===\n${e.text}`).join('\n\n');
+    if (!context) {
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'I could not read a selected PDF yet. Please try again after extraction finishes.', created_at: new Date().toISOString() }]);
+      return;
+    }
+    await sendToAI('Start a test session from the selected PDFs. Ask one question at a time, wait for my answer, then explain the correct answer before moving on.', 'test', context);
   };
 
   // End session
@@ -620,17 +655,32 @@ export const AIAssistant = () => {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-3xl mx-auto px-4 py-5 space-y-4 pb-52">
+            {mode !== 'chat' && (
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: modeColors[mode] + '18', color: modeColors[mode] }}>
+                  {mode === 'teach' ? <Brain className="w-4 h-4" /> : <FlaskConical className="w-4 h-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-[var(--foreground)]">{mode === 'teach' ? 'Teach Mode' : 'Test Mode'}</p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5 leading-relaxed">
+                    {mode === 'teach'
+                      ? teachSession ? `${teachSession.fileName} - pages ${Math.min((teachSession.currentBatch + 1) * BATCH_SIZE, teachSession.totalPages)}/${teachSession.totalPages}` : 'Preparing a PDF lesson.'
+                      : `${selectedPdfIds.length} selected PDF${selectedPdfIds.length !== 1 ? 's' : ''}. Orbit will quiz one answer at a time.`}
+                  </p>
+                </div>
+              </div>
+            )}
             <AnimatePresence initial={false}>
               {messages.map((msg, i) => (
                 <motion.div key={msg.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', damping: 24, stiffness: 140 }}
                   className={cn('flex gap-3', msg.role === 'user' ? 'flex-row-reverse' : '')}>
                   <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
-                    msg.role === 'user' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--primary)]')}>
-                    {msg.role === 'user' ? <div className="w-3 h-3 rounded-md border-2 border-white/80" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    msg.role === 'user' ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--primary)]')}>
+                    {msg.role === 'user' ? <div className="w-3 h-3 rounded-md border-2 border-current opacity-80" /> : <Sparkles className="w-3.5 h-3.5" />}
                   </div>
                   <div className={cn('px-4 py-3 rounded-2xl max-w-[85%] shadow-sm',
-                    msg.role === 'user' ? 'bg-[var(--primary)] text-white rounded-tr-none text-sm' : 'bg-[var(--card)] border border-[var(--border)] rounded-tl-none')}>
+                    msg.role === 'user' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-none text-sm' : 'bg-[var(--card)] border border-[var(--border)] rounded-tl-none')}>
                     {msg.role === 'assistant' ? <div className="space-y-0.5">{renderMarkdown(msg.content)}</div> : msg.content}
                   </div>
                 </motion.div>
@@ -672,7 +722,7 @@ export const AIAssistant = () => {
               {/* Chat */}
               <button onClick={() => handleModeClick('chat')}
                 className={cn('flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold border transition-all',
-                  mode === 'chat' ? 'text-white border-transparent shadow-sm' : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)]')}
+                  mode === 'chat' ? 'text-[var(--primary-foreground)] border-transparent shadow-sm' : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)]')}
                 style={mode === 'chat' ? { backgroundColor: 'var(--primary)' } : {}}>
                 <Sparkles className="w-3.5 h-3.5" /> Chat
               </button>
@@ -740,7 +790,7 @@ export const AIAssistant = () => {
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-[var(--muted)] placeholder:opacity-50" />
               <button onClick={() => { if (input.trim() && !isLoading) { sendToAI(input.trim()); setInput(''); } }}
                 disabled={isLoading || !input.trim()}
-                className="w-8 h-8 bg-[var(--primary)] text-white rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
+                className="w-8 h-8 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>

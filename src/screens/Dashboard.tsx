@@ -85,7 +85,7 @@ export const Dashboard = () => {
           {/* Activity chart */}
           <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-[var(--foreground)]">Activity</p>
+              <p className="text-sm font-semibold text-[var(--foreground)]">AI-Assisted Activity</p>
               <span className="text-[11px] text-[var(--muted)]">Last 7 days</span>
             </div>
             <div className="h-40" style={{ minHeight: 160 }}>
@@ -131,7 +131,7 @@ export const Dashboard = () => {
             </div>
             <button
               onClick={() => router.push('/ai')}
-              className="text-[11px] font-semibold px-4 py-1.5 rounded-lg text-white transition-all hover:opacity-90 active:scale-95"
+              className="text-[11px] font-semibold px-4 py-1.5 rounded-lg text-[var(--primary-foreground)] transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Earn XP
@@ -167,7 +167,7 @@ export const Dashboard = () => {
                   <p className="text-[12px] text-[var(--muted)] mb-3">No plans yet</p>
                   <button
                     onClick={() => router.push('/planner')}
-                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg text-white"
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg text-[var(--primary-foreground)]"
                     style={{ backgroundColor: 'var(--primary)' }}
                   >
                     <Plus className="w-3.5 h-3.5" /> Create plan

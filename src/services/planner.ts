@@ -36,6 +36,23 @@ export const createStudyPlan = async (data: Partial<StudyPlan>): Promise<StudyPl
   };
 };
 
+export const updateStudyPlan = async (id: string, data: Partial<StudyPlan>): Promise<StudyPlan> => {
+  const response = await api.put(`/api/study-plans/${id}`, {
+    name: data.name,
+    subjects: data.subjects,
+    total_hours: data.totalHours,
+    progress: data.progress,
+  });
+  const plan = response.data;
+  return {
+    id: plan.id,
+    name: plan.name,
+    subjects: normalizeSubjects(plan.subjects),
+    progress: plan.progress || 0,
+    totalHours: plan.total_hours || 0,
+  };
+};
+
 export const deleteStudyPlan = async (id: string): Promise<void> => {
   await api.delete(`/api/study-plans/${id}`);
 };

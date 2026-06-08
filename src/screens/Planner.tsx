@@ -7,9 +7,9 @@ import { cn } from '../lib/utils';
 import {
   Plus, Loader2, Trash2, BookOpen, X, Calendar,
   CheckCircle2, Circle, ChevronLeft, ChevronRight,
-  Brain, Clock, Sparkles,
+  Brain, Clock, Sparkles, Edit3, Bell,
 } from 'lucide-react';
-import { getStudyPlans, createStudyPlan, deleteStudyPlan } from '../services/planner';
+import { getStudyPlans, createStudyPlan, updateStudyPlan, deleteStudyPlan } from '../services/planner';
 import { callEdgeFunction } from '../lib/supabase';
 import { StudyPlan } from '../types';
 
@@ -23,13 +23,57 @@ const COLORS = ['#6366f1','#10b981','#f27d26','#8b5cf6','#f59e0b','#ef4444','#06
 
 const getDayLabel = (d: number) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d];
 const today = new Date().getDay();
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const nextDateForDay = (day: number, time: string) => {
+  const now = new Date();
+  const [hour, minute] = time.split(':').map(Number);
+  const date = new Date(now);
+  date.setDate(now.getDate() + ((day - now.getDay() + 7) % 7));
+  date.setHours(hour || 9, minute || 0, 0, 0);
+  if (date <= now) date.setDate(date.getDate() + 7);
+  return date;
+};
+
+const toIcsDate = (date: Date) =>
+  `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+
+const downloadSessionReminder = (planName: string, subject: string, day: number, time: string) => {
+  const start = nextDateForDay(day, time);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const safeName = `${planName}-${subject}-${getDayLabel(day)}-${time}`.replace(/[^a-z0-9-]+/gi, '-').toLowerCase();
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Orbit//Study Planner//EN',
+    'BEGIN:VEVENT',
+    `UID:${safeName}-${start.getTime()}@orbit`,
+    `SUMMARY:Study: ${subject}`,
+    `DESCRIPTION:${planName}`,
+    `DTSTART:${toIcsDate(start)}`,
+    `DTEND:${toIcsDate(end)}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:Study reminder for ${subject}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeName}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 // ── Create Plan Modal ─────────────────────────────────────────────────────────
-const CreateModal = ({ onClose, onSave }: { onClose: () => void; onSave: (p: StudyPlan) => void }) => {
+const CreateModal = ({ onClose, onSave, initialPlan }: { onClose: () => void; onSave: (p: StudyPlan) => void; initialPlan?: StudyPlan | null }) => {
   const [step, setStep] = useState<'form' | 'generating' | 'schedule'>('form');
-  const [name, setName] = useState('');
-  const [subjectsInput, setSubjectsInput] = useState('');
-  const [hours, setHours] = useState('');
+  const [name, setName] = useState(initialPlan?.name || '');
+  const [subjectsInput, setSubjectsInput] = useState(initialPlan?.subjects.join(', ') || '');
+  const [hours, setHours] = useState(initialPlan?.totalHours ? String(initialPlan.totalHours) : '');
   const [daysPerWeek, setDaysPerWeek] = useState('5');
   const [error, setError] = useState('');
   const [schedule, setSchedule] = useState<GeneratedSchedule | null>(null);
@@ -77,10 +121,12 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
     setSaving(true);
     try {
       const subjects = subjectsInput.split(',').map(s => s.trim()).filter(Boolean);
-      const plan = await createStudyPlan({
+      const payload = {
         name, subjects,
         totalHours: parseInt(hours) || 0,
-      });
+        progress: initialPlan?.progress || 0,
+      };
+      const plan = initialPlan ? await updateStudyPlan(initialPlan.id, payload) : await createStudyPlan(payload);
       onSave(plan); onClose();
     } catch { setError('Failed to save plan'); }
     finally { setSaving(false); }
@@ -95,7 +141,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] shrink-0">
           <h2 className="text-base font-bold text-[var(--foreground)]">
-            {step === 'form' ? 'New Study Plan' : step === 'generating' ? 'Generating Schedule…' : 'Review Schedule'}
+            {initialPlan ? 'Edit Study Plan' : step === 'form' ? 'New Study Plan' : step === 'generating' ? 'Generating Schedule...' : 'Review Schedule'}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all"><X className="w-4 h-4" /></button>
         </div>
@@ -131,12 +177,18 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
               </div>
               <div className="flex gap-3 pt-1">
                 <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-sm font-medium text-[var(--muted)] hover:bg-[var(--accent)] transition-all">Cancel</button>
-                <button onClick={handleGenerate}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+                <button onClick={handleSave} disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] flex items-center justify-center gap-2 hover:opacity-90 transition-all"
                   style={{ backgroundColor: 'var(--primary)' }}>
-                  <Brain className="w-4 h-4" /> Generate with AI
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : initialPlan ? <><CheckCircle2 className="w-4 h-4" /> Save Changes</> : <><CheckCircle2 className="w-4 h-4" /> Save Plan</>}
                 </button>
               </div>
+              {!initialPlan && (
+                <button onClick={handleGenerate}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold border border-[var(--border)] text-[var(--foreground)] flex items-center justify-center gap-2 hover:bg-[var(--accent)] transition-all">
+                  <Brain className="w-4 h-4" /> Preview AI Schedule
+                </button>
+              )}
             </div>
           )}
 
@@ -235,7 +287,7 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
       {error && <p className="text-sm text-red-500 bg-red-500/10 rounded-xl p-3">{error}</p>}
 
       <button onClick={onSave} disabled={saving}
-        className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-all"
+        className="w-full py-3 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-all"
         style={{ backgroundColor: 'var(--primary)' }}>
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Save Plan</>}
       </button>
@@ -244,7 +296,7 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
 };
 
 // ── Plan Detail view with inline calendar ─────────────────────────────────────
-const PlanDetail = ({ plan, onBack, onDelete }: { plan: StudyPlan; onBack: () => void; onDelete: () => void }) => {
+const PlanDetail = ({ plan, onBack, onDelete, onEdit }: { plan: StudyPlan; onBack: () => void; onDelete: () => void; onEdit: () => void }) => {
   const { show: showDialog } = useDialog();
   const [completedSlots, setCompletedSlots] = useState<Set<string>>(new Set());
 
@@ -304,6 +356,9 @@ const PlanDetail = ({ plan, onBack, onDelete }: { plan: StudyPlan; onBack: () =>
             <h1 className="text-xl font-bold tracking-tight truncate">{plan.name}</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{plan.subjects.length} subjects · {plan.totalHours}h total</p>
           </div>
+          <button onClick={onEdit} className="p-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-all">
+            <Edit3 className="w-4 h-4" />
+          </button>
           <button onClick={onDelete} className="p-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-red-500 hover:border-red-500/30 transition-all">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -416,6 +471,25 @@ const PlanDetail = ({ plan, onBack, onDelete }: { plan: StudyPlan; onBack: () =>
               <p className="text-[10px] text-[var(--muted)] opacity-50">Tap a session to confirm completion</p>
             </div>
           </div>
+
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-[var(--primary)]" />
+              <p className="text-sm font-semibold text-[var(--foreground)]">Calendar Reminders</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {weekSchedule.flatMap(day => day.sessions.map(sess => ({ ...sess, day: day.day }))).map(sess => (
+                <button key={`${sess.day}-${sess.subject}-${sess.time}`} onClick={() => downloadSessionReminder(plan.name, sess.subject, sess.day, sess.time)}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)] px-3 py-2 text-left hover:border-[var(--primary)]/40 transition-all">
+                  <span className="min-w-0">
+                    <span className="block text-[12px] font-semibold text-[var(--foreground)] truncate">{sess.subject}</span>
+                    <span className="block text-[10px] text-[var(--muted)]">{getDayLabel(sess.day)} {sess.time} - adds a 15 min reminder</span>
+                  </span>
+                  <Calendar className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Subjects quick view */}
@@ -442,6 +516,7 @@ export const Planner = () => {
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<StudyPlan | null>(null);
   const { show: showDialog } = useDialog();
 
@@ -460,7 +535,8 @@ export const Planner = () => {
 
   if (selectedPlan) return (
     <PlanDetail plan={selectedPlan} onBack={() => setSelectedPlan(null)}
-      onDelete={() => handleDelete(selectedPlan.id)} />
+      onDelete={() => handleDelete(selectedPlan.id)}
+      onEdit={() => { setEditingPlan(selectedPlan); setSelectedPlan(null); setShowModal(true); }} />
   );
 
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);
@@ -468,7 +544,13 @@ export const Planner = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <AnimatePresence>{showModal && <CreateModal onClose={() => setShowModal(false)} onSave={p => setPlans(prev => [p, ...prev])} />}</AnimatePresence>
+      <AnimatePresence>{showModal && <CreateModal
+        initialPlan={editingPlan}
+        onClose={() => { setShowModal(false); setEditingPlan(null); }}
+        onSave={p => {
+          setPlans(prev => editingPlan ? prev.map(plan => plan.id === p.id ? p : plan) : [p, ...prev]);
+          setEditingPlan(null);
+        }} />}</AnimatePresence>
       <div className="max-w-4xl mx-auto p-6 space-y-5">
 
         <div className="flex items-center justify-between pt-2">
@@ -476,8 +558,8 @@ export const Planner = () => {
             <h1 className="text-xl font-bold tracking-tight">Study Planner</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{plans.length} active plan{plans.length !== 1 ? 's' : ''}</p>
           </div>
-          <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 active:scale-95 transition-all"
+          <button onClick={() => { setEditingPlan(null); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90 active:scale-95 transition-all"
             style={{ backgroundColor: 'var(--primary)' }}>
             <Plus className="w-4 h-4" /> New Plan
           </button>
@@ -502,8 +584,8 @@ export const Planner = () => {
           <div className="bg-[var(--card)] border-2 border-dashed border-[var(--border)] rounded-xl p-16 text-center">
             <Calendar className="w-10 h-10 text-[var(--muted)] opacity-20 mx-auto mb-3" />
             <p className="text-sm text-[var(--muted)] opacity-50 mb-4">No study plans yet</p>
-            <button onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-all"
+            <button onClick={() => { setEditingPlan(null); setShowModal(true); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-all"
               style={{ backgroundColor: 'var(--primary)' }}>
               <Brain className="w-4 h-4" /> Create with AI
             </button>

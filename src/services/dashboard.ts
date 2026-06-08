@@ -70,10 +70,10 @@ export const getTasks = async (): Promise<Task[]> => {
 export const getActivity = async (): Promise<StudyActivity[]> => {
   const response = await api.get('/api/activity');
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dailyHours: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+  const dailyActivity: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
   response.data.forEach((entry: any) => {
     const dayName = days[new Date(entry.activity_date).getDay()];
-    dailyHours[dayName] += entry.activity_count / 60;
+    dailyActivity[dayName] += Number(entry.activity_count) || 0;
   });
-  return Object.entries(dailyHours).map(([day, hours]) => ({ day, hours: Math.round(hours * 10) / 10 }));
+  return Object.entries(dailyActivity).map(([day, hours]) => ({ day, hours }));
 };

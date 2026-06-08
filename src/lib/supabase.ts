@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -45,6 +46,19 @@ export async function downloadStorageFile(bucket: string, path: string): Promise
 export async function updateXP(activityType: string, incrementValue = 1) {
   try {
     await callEdgeFunction('update-user-stats', { activityType, incrementValue });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch(`${apiBaseUrl}/api/activity`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        activity_type: activityType === 'gpa_record' ? 'gpa_calc' : activityType,
+        activity_count: incrementValue,
+      }),
+    });
   } catch (e) {
     console.error('XP update failed:', e);
   }

@@ -26,6 +26,7 @@ const navItems = [
 ] as const;
 
 const STORAGE_KEY = 'orbit-sidebar-collapsed';
+const themeOptions = [{ v: 'light', I: Sun }, { v: 'dark', I: Moon }, { v: 'brown', I: Coffee }] as const;
 
 // ── API Status Modal ──────────────────────────────────────────────────────────
 interface ApiProvider { name: string; status: string; latency: string; is_backup: boolean; }
@@ -171,12 +172,12 @@ export const Sidebar = () => {
         {/* Bottom */}
         <div className="p-2 border-t border-zinc-100 dark:border-white/5 space-y-1 shrink-0">
           {/* Theme */}
-          <div className={cn('flex gap-1', collapsed ? 'flex-col items-center' : '')}>
-            {[{ v: 'light', I: Sun }, { v: 'dark', I: Moon }, { v: 'brown', I: Coffee }].map(({ v, I }) => (
+          <div className={cn('flex gap-1 rounded-full border border-[var(--border)] bg-[var(--input)] p-1', collapsed ? 'flex-col items-center' : '')}>
+            {themeOptions.map(({ v, I }) => (
               <button key={v} onClick={() => setTheme(v)} title={v}
-                className={cn('flex items-center justify-center rounded-lg transition-all',
-                  collapsed ? 'w-9 h-7' : 'flex-1 h-7',
-                  theme === v ? 'bg-white text-black' : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5')}>
+                className={cn('flex items-center justify-center rounded-full transition-all',
+                  collapsed ? 'w-7 h-7' : 'flex-1 h-7',
+                  theme === v ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]' : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]')}>
                 <I className="w-3.5 h-3.5" />
               </button>
             ))}
@@ -270,11 +271,11 @@ export const MobileNav = () => {
                 })}
               </nav>
               <div className="border-t border-zinc-100 dark:border-white/5 pt-3 space-y-2">
-                <div className="flex gap-1">
-                  {[{ v: 'light', I: Sun }, { v: 'dark', I: Moon }, { v: 'brown', I: Coffee }].map(({ v, I }) => (
+                <div className="flex gap-1 rounded-full border border-[var(--border)] bg-[var(--input)] p-1">
+                  {themeOptions.map(({ v, I }) => (
                     <button key={v} onClick={() => setTheme(v)}
-                      className={cn('flex-1 h-8 rounded-xl flex items-center justify-center transition-all',
-                        theme === v ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5')}>
+                      className={cn('flex-1 h-8 rounded-full flex items-center justify-center transition-all',
+                        theme === v ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]' : 'text-[var(--muted)] hover:bg-[var(--accent)]')}>
                       <I className="w-3.5 h-3.5" />
                     </button>
                   ))}
