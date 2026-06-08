@@ -7,6 +7,7 @@ import {
   ArrowRight, Star, Zap, Shield, Globe, ChevronDown,
   GraduationCap, Search, MessageSquare, FileText, Activity
 } from 'lucide-react';
+import api from '../services/api';
 
 // Animated counter hook
 function useCounter(end: number, duration = 2000, inView = true) {
@@ -46,20 +47,34 @@ const features = [
   { icon: MessageSquare,  label: 'Campus Chat',     desc: 'Real-time peer messaging with your university community, built for academic collaboration.', color: '#ec4899' },
 ];
 
-const stats = [
-  { value: 1200, suffix: '+', label: 'Active Students' },
-  { value: 98,   suffix: '%', label: 'Accuracy Rate' },
-  { value: 3,    suffix: 'x', label: 'GPA Improvement' },
-  { value: 24,   suffix: '/7', label: 'AI Availability' },
-];
+interface LandingMetric {
+  key: 'active_students' | 'ai_interactions' | 'study_hours' | 'processed_materials';
+  label: string;
+  value: number | null;
+  unit: 'count' | 'hours';
+  source: string;
+}
 
-const StatCard = ({ s, inView, i }: { s: typeof stats[0]; inView: boolean; i: number }) => {
-  const count = useCounter(s.value, 1800, inView);
+const formatMetricValue = (metric: LandingMetric) => {
+  if (metric.value === null) return 'Unavailable';
+  return metric.value.toLocaleString(undefined, {
+    maximumFractionDigits: metric.unit === 'hours' ? 1 : 0,
+  });
+};
+
+const StatCard = ({ metric, inView, i }: { metric: LandingMetric; inView: boolean; i: number }) => {
+  const count = useCounter(Math.round(metric.value ?? 0), 1800, inView);
+  const value = metric.value === null
+    ? 'Unavailable'
+    : metric.unit === 'hours' && !Number.isInteger(metric.value)
+      ? formatMetricValue(metric)
+      : count.toLocaleString();
+
   return (
     <FadeUp delay={i * 0.1}>
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
-        <p className="text-3xl lg:text-4xl font-black text-white tabular-nums">{count}{s.suffix}</p>
-        <p className="text-sm text-white/50 mt-1 font-medium">{s.label}</p>
+        <p className="text-3xl lg:text-4xl font-black text-white tabular-nums">{value}</p>
+        <p className="text-sm text-white/50 mt-1 font-medium">{metric.label}</p>
       </div>
     </FadeUp>
   );
@@ -68,9 +83,56 @@ const StatCard = ({ s, inView, i }: { s: typeof stats[0]; inView: boolean; i: nu
 const StatsSection = () => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
+  const [metrics, setMetrics] = useState<LandingMetric[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api.get('/api/public/landing-metrics')
+      .then((response) => {
+        if (!active) return;
+        const nextMetrics = Array.isArray(response.data?.metrics) ? response.data.metrics : [];
+        setMetrics(nextMetrics);
+        setError(nextMetrics.length === 0 ? 'No live platform metrics are available yet.' : '');
+      })
+      .catch(() => {
+        if (active) setError('Live platform metrics are unavailable right now.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div ref={ref} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <FadeUp key={i} delay={i * 0.1}>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+              <p className="text-sm font-semibold text-white/70">Syncing live data</p>
+              <p className="text-xs text-white/35 mt-2">Backend metrics loading</p>
+            </div>
+          </FadeUp>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div ref={ref} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+        <p className="text-sm font-semibold text-white/75">{error}</p>
+        <p className="text-xs text-white/40 mt-2">No placeholder platform numbers are shown.</p>
+      </div>
+    );
+  }
+
   return (
     <div ref={ref} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((s, i) => <div key={s.label}><StatCard s={s} inView={inView} i={i} /></div>)}
+      {metrics.map((metric, i) => <div key={metric.key}><StatCard metric={metric} inView={inView} i={i} /></div>)}
     </div>
   );
 };
@@ -89,6 +151,15 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+
+  useEffect(() => {
+    const hasSupabaseHash = window.location.hash.includes('access_token=') || window.location.hash.includes('refresh_token=');
+    const hasCode = new URLSearchParams(window.location.search).has('code');
+    if (hasSupabaseHash || hasCode) {
+      window.location.replace(`/auth/callback${window.location.search}${window.location.hash}`);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
 
@@ -153,22 +224,10 @@ export default function LandingPage() {
             </a>
           </motion.div>
 
-          {/* Social proof */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-            className="flex items-center justify-center gap-4 mt-10">
-            <div className="flex -space-x-2">
-              {['E', 'A', 'O', 'T', 'I'].map((l, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-[#09090b] flex items-center justify-center text-[11px] font-black"
-                  style={{ backgroundColor: ['#ffffff', '#4da3ff', '#00d26a', '#eab308', '#ec4899'][i], color: i === 0 ? '#0a0a0a' : '#ffffff' }}>
-                  {l}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />)}
-              <span className="text-[12px] text-white/40 font-medium ml-1">Loved by 1,200+ students</span>
-            </div>
-          </motion.div>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+            className="mt-10 text-[12px] text-white/40 font-medium">
+            Live platform metrics are synced from the backend below.
+          </motion.p>
         </motion.div>
 
         {/* Hero product preview */}
@@ -188,32 +247,22 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              {/* Dashboard preview */}
               <div className="p-6 grid grid-cols-4 gap-3 opacity-90">
-                {[
-                  { label: 'Neural Progress', value: '73%', color: '#ffffff' },
-                  { label: 'Current GPA', value: '4.52', color: '#10b981' },
-                  { label: 'AI Sessions', value: '142', color: '#6366f1' },
-                  { label: 'Study Time', value: '48h', color: '#8b5cf6' },
-                ].map((card) => (
-                  <div key={card.label} className="bg-white/3 border border-white/8 rounded-xl p-3">
-                    <p className="text-[9px] text-white/40 uppercase tracking-wider mb-2">{card.label}</p>
-                    <p className="text-xl font-bold" style={{ color: card.color }}>{card.value}</p>
+                {['AI Tutor', 'GPA Tracker', 'Research', 'Course Library'].map((label) => (
+                  <div key={label} className="bg-white/3 border border-white/8 rounded-xl p-3">
+                    <p className="text-[9px] text-white/40 uppercase tracking-wider">{label}</p>
+                    <div className="mt-4 h-2 rounded-full bg-white/10" />
                   </div>
                 ))}
-                <div className="col-span-3 bg-white/3 border border-white/8 rounded-xl p-3">
-                  <p className="text-[9px] text-white/40 uppercase tracking-wider mb-3">Activity</p>
-                  <div className="flex items-end gap-1.5 h-12">
-                    {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, backgroundColor: '#ffffff', opacity: 0.45 + (i * 0.06) }} />
+                <div className="col-span-4 bg-white/3 border border-white/8 rounded-xl p-4">
+                  <p className="text-[9px] text-white/40 uppercase tracking-wider mb-3">Live backend data</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['profiles', 'stats', 'activity', 'materials'].map((source) => (
+                      <div key={source} className="h-10 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center">
+                        <span className="text-[9px] text-white/35 uppercase tracking-wider">{source}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-3 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-full border-4 border-white/30 flex items-center justify-center">
-                    <p className="text-xs font-bold text-white">73%</p>
-                  </div>
-                  <p className="text-[9px] text-white/30 mt-1">Level 3</p>
                 </div>
               </div>
             </div>
@@ -273,21 +322,23 @@ export default function LandingPage() {
             <p className="text-[12px] font-bold text-white uppercase tracking-[0.2em] mb-3">Simple by design</p>
             <h2 className="text-4xl lg:text-5xl font-black tracking-tight">Up and running in seconds</h2>
           </FadeUp>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
             {[
               { step: '01', title: 'Sign up', desc: 'Use your Elizade University email. Your account is verified and ready instantly.' },
               { step: '02', title: 'Upload materials', desc: 'Drop in your lecture PDFs. Orbit extracts the content and makes it AI-ready.' },
               { step: '03', title: 'Learn smarter', desc: 'Chat with Orbit AI about your notes, generate quizzes, track your GPA, and climb the leaderboard.' },
             ].map((s, i) => (
               <div key={s.step}><FadeUp delay={i * 0.12}>
-                <div className="relative">
+                <div className="relative md:pr-8">
                   {i < 2 && (
-                    <div className="hidden md:block absolute top-7 left-full w-full h-px bg-gradient-to-r from-white/10 to-transparent z-10" />
+                    <div className="hidden md:block absolute top-4 left-12 right-[-2rem] h-px bg-gradient-to-r from-white/18 to-transparent z-10" />
                   )}
-                  <div className="bg-[#111113] border border-white/8 rounded-2xl p-6">
-                    <p className="text-[11px] font-black text-white tracking-[0.3em] mb-4">{s.step}</p>
+                  <div className="relative z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white text-[11px] font-black text-black shadow-[var(--shadow-soft)]">
+                    {s.step}
+                  </div>
+                  <div className="mt-5">
                     <h3 className="text-[16px] font-bold text-white mb-2">{s.title}</h3>
-                    <p className="text-[13px] text-white/40 leading-relaxed">{s.desc}</p>
+                    <p className="text-[13px] text-white/45 leading-relaxed max-w-[18rem]">{s.desc}</p>
                   </div>
                 </div>
               </FadeUp></div>

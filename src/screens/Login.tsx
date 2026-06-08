@@ -58,7 +58,10 @@ export const Login = () => {
         if (!fullName || !username) { setError('Please fill in all required fields'); setLoading(false); return; }
         const { data, error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: fullName, username, matric_number: matricNumber } }
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { full_name: fullName, username, matric_number: matricNumber },
+          }
         });
         if (error) throw error;
         if (data.session) router.push('/');
