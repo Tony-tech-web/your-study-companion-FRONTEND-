@@ -820,7 +820,7 @@ export const AIAssistant = () => {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="max-w-3xl mx-auto px-4 py-5 space-y-4 pb-52">
+          <div className="max-w-3xl mx-auto px-4 py-5 space-y-4 pb-6">
             {mode !== 'chat' && (
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-start gap-3 shadow-sm">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: modeColors[mode] + '18', color: modeColors[mode] }}>
@@ -880,8 +880,8 @@ export const AIAssistant = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-[var(--background)] via-[var(--background)/95] to-transparent pt-3">
-          <div className="max-w-3xl mx-auto px-4 space-y-2.5 pb-5">
+        <div className="shrink-0 z-20 border-t border-[var(--border)] bg-[var(--background)]/92 backdrop-blur-[24px] pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}>
+          <div className="max-w-3xl mx-auto px-4 space-y-2.5">
 
             {/* Mode buttons — Chat, Teach, Test as primary CTAs */}
             <div className="flex items-center gap-2">
@@ -960,7 +960,6 @@ export const AIAssistant = () => {
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-center text-[10px] text-[var(--muted)] opacity-25">Powered by Supabase Edge</p>
           </div>
         </div>
       </div>

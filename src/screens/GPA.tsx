@@ -72,7 +72,7 @@ const AddModal = ({ onClose, onSave }: { onClose: () => void; onSave: (r: GPARec
           <div className="flex gap-3 pt-1">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-sm font-medium text-[var(--muted)] hover:bg-[var(--accent)] transition-all">Cancel</button>
             <button onClick={handleSave} disabled={loading}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:opacity-90"
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:opacity-90"
               style={{ backgroundColor: 'var(--primary)' }}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Record'}
             </button>
@@ -118,7 +118,7 @@ export const GPA = () => {
             <p className="text-xs text-[var(--muted)] mt-0.5">{records.length} semester{records.length !== 1 ? 's' : ''} recorded</p>
           </div>
           <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90 active:scale-95 transition-all"
             style={{ backgroundColor: 'var(--primary)' }}>
             <Plus className="w-4 h-4" /> Add Record
           </button>
@@ -126,11 +126,11 @@ export const GPA = () => {
 
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[var(--primary)] rounded-xl p-4 text-white relative overflow-hidden">
-            <div className="absolute right-2 top-2 opacity-10"><GraduationCap className="w-16 h-16" /></div>
-            <p className="text-[11px] font-medium uppercase tracking-wider opacity-70 mb-2">Cumulative GPA</p>
-            <p className="text-3xl font-bold tracking-tight">{cumGPA}</p>
-            <p className="text-[11px] mt-1 opacity-70">{classify(parseFloat(cumGPA))}</p>
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 relative overflow-hidden shadow-[var(--shadow-soft)]">
+            <div className="absolute right-2 top-2 opacity-10 text-[var(--foreground)]"><GraduationCap className="w-16 h-16" /></div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--muted)] mb-2">Cumulative GPA</p>
+            <p className="text-3xl font-bold tracking-tight text-[var(--foreground)]">{cumGPA}</p>
+            <p className="text-[11px] mt-1 text-[var(--muted)]">{classify(parseFloat(cumGPA))}</p>
           </div>
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Total Credits</p>
