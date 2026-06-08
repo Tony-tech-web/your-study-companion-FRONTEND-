@@ -11,13 +11,12 @@ import {
 } from 'lucide-react';
 import { getStudyPlans, createStudyPlan, updateStudyPlan, deleteStudyPlan } from '../services/planner';
 import { callEdgeFunction } from '../lib/supabase';
-import { StudyPlan } from '../types';
+import { StudyPlan, StudyPlanBlock } from '../types';
 
 // Time slots shown in the schedule column
 const HOURS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
 
-interface ScheduleBlock { day: number; hour: number; subject: string; duration: number; color: string; }
-interface GeneratedSchedule { blocks: ScheduleBlock[]; summary: string; }
+interface GeneratedSchedule { blocks: StudyPlanBlock[]; summary: string; }
 
 const COLORS = ['#6366f1','#10b981','#f27d26','#8b5cf6','#f59e0b','#ef4444','#06b6d4'];
 
@@ -76,7 +75,9 @@ const CreateModal = ({ onClose, onSave, initialPlan }: { onClose: () => void; on
   const [hours, setHours] = useState(initialPlan?.totalHours ? String(initialPlan.totalHours) : '');
   const [daysPerWeek, setDaysPerWeek] = useState('5');
   const [error, setError] = useState('');
-  const [schedule, setSchedule] = useState<GeneratedSchedule | null>(null);
+  const [schedule, setSchedule] = useState<GeneratedSchedule | null>(
+    initialPlan?.scheduleBlocks?.length ? { blocks: initialPlan.scheduleBlocks, summary: 'Saved weekly schedule' } : null
+  );
   const [saving, setSaving] = useState(false);
 
   const handleGenerate = async () => {
@@ -99,7 +100,7 @@ Return ONLY valid JSON in this exact format:
   ],
   "summary": "Brief description of the schedule"
 }
-day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: ${COLORS.slice(0, subjects.length).join(',')}. Only JSON, no markdown.`
+day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: ${COLORS.slice(0, subjects.length).join(',')}. Only JSON, no markdown, no emoji, no decorative glyphs.`
         }],
         providerId: 'auto',
         mode: 'chat',
@@ -125,6 +126,8 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
         name, subjects,
         totalHours: parseInt(hours) || 0,
         progress: initialPlan?.progress || 0,
+        scheduleBlocks: schedule?.blocks || initialPlan?.scheduleBlocks || [],
+        completedSessionIds: initialPlan?.completedSessionIds || [],
       };
       const plan = initialPlan ? await updateStudyPlan(initialPlan.id, payload) : await createStudyPlan(payload);
       onSave(plan); onClose();
@@ -259,7 +262,7 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
                       d === today ? 'bg-[var(--primary)]/3' : '')} />
                   ))}
                   {/* Schedule blocks */}
-                  {schedule.blocks.filter((b: ScheduleBlock) => b.day === d).map((block: ScheduleBlock, bi: number) => {
+                  {schedule.blocks.filter((b: StudyPlanBlock) => b.day === d).map((block: StudyPlanBlock, bi: number) => {
                     const startHour = parseInt(HOURS[0]);
                     const topOffset = (block.hour - startHour) * 40; // 40px per hour
                     const height = Math.max(block.duration * 40 - 2, 32);
@@ -296,51 +299,83 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
 };
 
 // ── Plan Detail view with inline calendar ─────────────────────────────────────
-const PlanDetail = ({ plan, onBack, onDelete, onEdit }: { plan: StudyPlan; onBack: () => void; onDelete: () => void; onEdit: () => void }) => {
+const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: StudyPlan; onBack: () => void; onDelete: () => void; onEdit: () => void; onPlanUpdate: (plan: StudyPlan) => void }) => {
   const { show: showDialog } = useDialog();
-  const [completedSlots, setCompletedSlots] = useState<Set<string>>(new Set());
+  const [completedSlots, setCompletedSlots] = useState<Set<string>>(new Set(plan.completedSessionIds || []));
 
-  const progress = useMemo(() => {
-    if (plan.subjects.length === 0) return plan.progress;
-    return Math.round((completedSlots.size / Math.max(plan.subjects.length * 3, 1)) * 100);
-  }, [completedSlots, plan]);
-
-  const toggleSlot = async (key: string) => {
-    setCompletedSlots(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
-
-  const handleConfirmSession = async (subject: string, timeLabel: string) => {
-    const ok = await showDialog({
-      title: 'Confirm Study Session',
-      message: `Mark "${subject}" at ${timeLabel} as completed?`,
-      confirmLabel: 'Confirm',
-      cancelLabel: 'Not Yet',
-    });
-    if (ok) toggleSlot(`${subject}-${timeLabel}`);
-  };
-
-  // Generate a simple weekly schedule from subjects
-  const weekDays = [1,2,3,4,5]; // Mon–Fri
-  const hoursPerSubject = plan.totalHours > 0 && plan.subjects.length > 0
-    ? Math.round(plan.totalHours / plan.subjects.length)
-    : 2;
   const sessionTimes = ['08:00','10:00','14:00','16:00'];
   const colors = ['#6366f1','#10b981','#f27d26','#8b5cf6','#f59e0b','#ef4444'];
 
-  // Distribute subjects across week days
-  const weekSchedule: { day: number; sessions: { subject: string; time: string; color: string }[] }[] = weekDays.map((d, di) => ({
-    day: d,
-    sessions: plan.subjects
-      .filter((_, si) => si % weekDays.length === di || (di === 0 && si >= weekDays.length))
-      .slice(0, 2)
-      .map((sub, si) => ({
-        subject: sub,
-        time: sessionTimes[si] || '09:00',
-        color: colors[plan.subjects.indexOf(sub) % colors.length],
+  const fallbackBlocks = useMemo<StudyPlanBlock[]>(() => {
+    const days = [1,2,3,4,5];
+    return plan.subjects.map((subject, index) => {
+      const day = days[index % days.length];
+      const time = sessionTimes[Math.floor(index / days.length) % sessionTimes.length] || '09:00';
+      return {
+        day,
+        hour: parseInt(time.split(':')[0], 10),
+        subject,
+        duration: Math.max(1, Math.round(plan.totalHours / Math.max(plan.subjects.length, 1))),
+        color: colors[index % colors.length],
+      };
+    });
+  }, [plan.subjects, plan.totalHours]);
+
+  const scheduleBlocks = plan.scheduleBlocks?.length ? plan.scheduleBlocks : fallbackBlocks;
+  const sessionId = (block: StudyPlanBlock) => `${plan.id}-${block.day}-${block.hour}-${block.subject}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+
+  const progress = useMemo(() => {
+    if (scheduleBlocks.length === 0) return plan.progress;
+    return Math.round((completedSlots.size / scheduleBlocks.length) * 100);
+  }, [completedSlots, scheduleBlocks.length, plan.progress]);
+
+  const toggleSlot = async (key: string) => {
+    const next = new Set(completedSlots);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setCompletedSlots(next);
+    try {
+      const completedSessionIds = Array.from(next);
+      const updated = await updateStudyPlan(plan.id, {
+        ...plan,
+        scheduleBlocks,
+        completedSessionIds,
+        progress: scheduleBlocks.length === 0 ? plan.progress : Math.round((completedSessionIds.length / scheduleBlocks.length) * 100),
+      });
+      onPlanUpdate(updated);
+    } catch {
+      showDialog({ type: 'error', message: 'Failed to save session progress.' });
+    }
+  };
+
+  const handleConfirmSession = async (key: string, subject: string, timeLabel: string) => {
+    const done = completedSlots.has(key);
+    const ok = await showDialog({
+      title: done ? 'Update Study Session' : 'Confirm Study Session',
+      message: done ? `Mark "${subject}" at ${timeLabel} as not completed?` : `Mark "${subject}" at ${timeLabel} as completed?`,
+      confirmLabel: done ? 'Mark Not Done' : 'Confirm',
+      cancelLabel: 'Cancel',
+    });
+    if (ok) toggleSlot(key);
+  };
+
+  const weekDays = (scheduleBlocks.length
+    ? Array.from(new Set(scheduleBlocks.map(block => block.day))).sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    : [1,2,3,4,5]
+  );
+  const hoursPerSubject = plan.totalHours > 0 && plan.subjects.length > 0
+    ? Math.round(plan.totalHours / plan.subjects.length)
+    : 2;
+
+  const weekSchedule: { day: number; sessions: { id: string; subject: string; time: string; color: string; duration: number }[] }[] = weekDays.map(day => ({
+    day,
+    sessions: scheduleBlocks
+      .filter(block => block.day === day)
+      .map(block => ({
+        id: sessionId(block),
+        subject: block.subject,
+        time: `${pad(block.hour)}:00`,
+        color: block.color || colors[plan.subjects.indexOf(block.subject) % colors.length] || colors[0],
+        duration: block.duration || 1,
       })),
   }));
 
@@ -450,10 +485,9 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit }: { plan: StudyPlan; onBac
                       {dayData?.sessions.map((sess, si) => {
                         const hourIndex = HOURS.indexOf(sess.time);
                         if (hourIndex < 0 || hourIndex >= 10) return null;
-                        const key = `${sess.subject}-${getDayLabel(d)}-${sess.time}`;
-                        const done = completedSlots.has(key);
+                        const done = completedSlots.has(sess.id);
                         return (
-                          <button key={si} onClick={() => handleConfirmSession(sess.subject, `${getDayLabel(d)} ${sess.time}`)}
+                          <button key={sess.id} onClick={() => handleConfirmSession(sess.id, sess.subject, `${getDayLabel(d)} ${sess.time}`)}
                             className="absolute inset-x-0.5 rounded-lg flex flex-col justify-center px-1.5 py-1 transition-all hover:opacity-90 active:scale-95"
                             style={{ top: hourIndex * 48 + 2, height: 44, backgroundColor: done ? sess.color : sess.color + '33', borderWidth: 1, borderColor: done ? sess.color : sess.color + '66' }}>
                             <p className="text-[9px] font-bold truncate" style={{ color: done ? '#fff' : sess.color }}>{sess.subject}</p>
@@ -536,7 +570,11 @@ export const Planner = () => {
   if (selectedPlan) return (
     <PlanDetail plan={selectedPlan} onBack={() => setSelectedPlan(null)}
       onDelete={() => handleDelete(selectedPlan.id)}
-      onEdit={() => { setEditingPlan(selectedPlan); setSelectedPlan(null); setShowModal(true); }} />
+      onEdit={() => { setEditingPlan(selectedPlan); setSelectedPlan(null); setShowModal(true); }}
+      onPlanUpdate={updated => {
+        setSelectedPlan(updated);
+        setPlans(prev => prev.map(plan => plan.id === updated.id ? updated : plan));
+      }} />
   );
 
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);

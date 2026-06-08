@@ -41,3 +41,19 @@ export const getResearchHistory = async (): Promise<ResearchPaper[]> => {
 export const deleteResearchEntry = async (id: string): Promise<void> => {
   await api.delete(`/api/research/${id}`);
 };
+
+export const saveResearchEntry = async (query: string, results: SearchResult[], aiSummary?: string): Promise<ResearchPaper> => {
+  const response = await api.post('/api/research', {
+    query,
+    results,
+    ai_summary: aiSummary || null,
+  });
+  const item = response.data;
+  return {
+    id: item.id,
+    title: item.query,
+    authors: ['Orbit AI'],
+    year: new Date(item.created_at).getFullYear(),
+    abstract: item.ai_summary || 'Saved project',
+  };
+};

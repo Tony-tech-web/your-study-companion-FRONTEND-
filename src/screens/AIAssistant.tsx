@@ -15,7 +15,14 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useDialog } from '../components/Dialog';
 
-const cleanText = (t: string) => t.replace(/\{\{[^}]+\}\}/g, '').trim();
+const stripDecorativeGlyphs = (t: string) =>
+  t
+    .replace(/[0-9#*]\ufe0f?\u20e3/g, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+const cleanText = (t: string) => stripDecorativeGlyphs(t.replace(/\{\{[^}]+\}\}/g, ''));
 
 const friendlyAIError = (err: any) => {
   const raw = String(err?.message || err || '').trim();
@@ -91,7 +98,7 @@ const renderMarkdown = (text: string) => {
   };
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = stripDecorativeGlyphs(lines[i]);
 
     if (isTableRow(line) && lines[i + 1] && isTableDivider(lines[i + 1])) {
       flushList();
@@ -122,10 +129,10 @@ const renderMarkdown = (text: string) => {
         const level = line.match(/^#{1,3}/)?.[0].length || 1;
         const heading = line.replace(/^#{1,3}\s+/, '');
         const headingClass = level === 1
-          ? 'mt-3 mb-1.5 text-[17px] font-black leading-snug'
+          ? 'mt-3 mb-1.5 text-[17px] font-black leading-snug font-display'
           : level === 2
-            ? 'mt-3 mb-1 text-[15px] font-black leading-snug'
-            : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug';
+            ? 'mt-3 mb-1 text-[15px] font-black leading-snug font-display'
+            : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug font-display';
         elements.push(<p key={i} className={`${headingClass} text-[var(--foreground)]`}>{parseBold(heading)}</p>);
       } else {
         elements.push(
@@ -321,17 +328,32 @@ const StudyToolsPanel = ({ extractedPdfs, onClose }: { extractedPdfs: ExtractedP
     if (!content) { setError('No PDF content. Extract a PDF first.'); return; }
     setGenerating(true); setResult(null); setError(''); setCard(0); setFlipped(false); setAnswers({}); setSubmitted(false);
     try {
-      const res = await callEdgeFunction('generate-study-tools', { pdfContent: content.slice(0, 30000), toolType: tool });
+      const res = await callEdgeFunction('generate-study-tools', {
+        pdfContent: content.slice(0, 30000),
+        toolType: tool,
+        studyFocus: 'Use a mature academic tone. Do not use emoji, decorative glyphs, or social-media style labels. Keep the output precise and suitable for university study.',
+      });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');
       const data = await res.json();
       setResult(data.content);
       await updateXP(tool === 'quiz' ? 'quiz' : 'flashcard');
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) { setError(friendlyAIError(e)); }
     finally { setGenerating(false); }
   };
 
-  const flashItems: Flashcard[] = Array.isArray(result) ? result : [];
-  const quizItems: QuizQuestion[] = Array.isArray(result) ? result : [];
+  const parseArrayResult = <T,>(value: any): T[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string') return [];
+    try {
+      const match = value.match(/\[[\s\S]*\]/);
+      return match ? JSON.parse(match[0]) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const flashItems: Flashcard[] = parseArrayResult<Flashcard>(result);
+  const quizItems: QuizQuestion[] = parseArrayResult<QuizQuestion>(result);
   const score = submitted ? quizItems.filter((q, i) => answers[i] === q.correct_answer).length : 0;
 
   return (
@@ -577,7 +599,7 @@ export const AIAssistant = () => {
     const session: TeachSession = { pdfId: ready.pdfId, fileName: ready.fileName, pages: ready.pages, totalPages: ready.pageCount, currentBatch: 0, finished: false };
     setTeachSession(session);
     const batch = ready.pages.slice(0, BATCH_SIZE).join('\n\n');
-    await sendToAI(`Start a teach session for "${ready.fileName}" pages 1-${Math.min(BATCH_SIZE, ready.pageCount)}. Teach it like a tutor: learning goals, plain explanation, examples, and one checkpoint question at the end.`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
+    await sendToAI(`Start a teach session for "${ready.fileName}" pages 1-${Math.min(BATCH_SIZE, ready.pageCount)}. Teach it like a mature university tutor: clear learning goals, plain explanation, examples, and one checkpoint question at the end. Do not use emoji or decorative numbered glyphs.`, 'teach', batch, { current: Math.min(BATCH_SIZE, ready.pageCount), total: ready.pageCount });
   };
 
   // Teach: next batch
@@ -589,7 +611,7 @@ export const AIAssistant = () => {
     const batch = teachSession.pages.slice(start, end).join('\n\n');
     const finished = end >= teachSession.totalPages;
     setTeachSession(prev => prev ? { ...prev, currentBatch: next, finished } : prev);
-    await sendToAI(`Continue the teach session for "${teachSession.fileName}" pages ${start + 1}-${end}. Build on the previous lesson and end with a short checkpoint.`, 'teach', batch, { current: end, total: teachSession.totalPages });
+    await sendToAI(`Continue the teach session for "${teachSession.fileName}" pages ${start + 1}-${end}. Build on the previous lesson and end with a short checkpoint. Keep a mature academic tone and do not use emoji or decorative glyphs.`, 'teach', batch, { current: end, total: teachSession.totalPages });
   };
 
   // Test: start
@@ -607,7 +629,7 @@ export const AIAssistant = () => {
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'I could not read a selected PDF yet. Please try again after extraction finishes.', created_at: new Date().toISOString() }]);
       return;
     }
-    await sendToAI('Start a test session from the selected PDFs. Ask one question at a time, wait for my answer, then explain the correct answer before moving on.', 'test', context);
+    await sendToAI('Start a test session from the selected PDFs. Ask one question at a time, wait for my answer, then explain the correct answer before moving on. Do not use emoji or decorative glyphs.', 'test', context);
   };
 
   // End session

@@ -1,10 +1,10 @@
 'use client';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Check, X, Lightbulb, Code2 } from 'lucide-react';
+import { Search, Loader2, Trash2, Copy, ExternalLink, BookOpen, Clock, Check, X, Lightbulb, Code2, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDialog } from '../components/Dialog';
 import { cn } from '../lib/utils';
-import { searchResearch, getResearchHistory, deleteResearchEntry, SearchResult, ResearchSearchResult } from '../services/research';
+import { searchResearch, getResearchHistory, deleteResearchEntry, saveResearchEntry, SearchResult, ResearchSearchResult } from '../services/research';
 import { updateXP } from '../lib/supabase';
 
 interface HistoryItem { id: string; title: string; abstract: string; year: number; }
@@ -23,6 +23,8 @@ export const Research = () => {
   const [citationFormat, setCitationFormat] = useState<'APA' | 'MLA' | 'CHI'>('APA');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'insights'>('results');
+  const [savingProjectId, setSavingProjectId] = useState<string | null>(null);
+  const [savedProjectIds, setSavedProjectIds] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadHistory(); }, []);
@@ -75,6 +77,20 @@ export const Research = () => {
     navigator.clipboard.writeText(getCitation(selected));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveProject = async (result: SearchResult) => {
+    if (savingProjectId || savedProjectIds.includes(result.id)) return;
+    setSavingProjectId(result.id);
+    try {
+      const saved = await saveResearchEntry(`Project: ${result.title}`, [result], result.snippet);
+      setHistory(prev => [saved as any, ...prev]);
+      setSavedProjectIds(prev => [...prev, result.id]);
+    } catch {
+      showDialog({ type: 'error', message: 'Failed to save project.' });
+    } finally {
+      setSavingProjectId(null);
+    }
   };
 
   return (
@@ -181,6 +197,17 @@ export const Research = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--input)] border border-[var(--border)] text-[var(--muted)]">{r.source}</span>
                         {r.isGitHub && <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-500">GitHub</span>}
+                        {filterMode === 'projects' && (
+                          <button onClick={e => { e.stopPropagation(); handleSaveProject(r); }}
+                            disabled={savingProjectId === r.id || savedProjectIds.includes(r.id)}
+                            className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all',
+                              savedProjectIds.includes(r.id)
+                                ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500'
+                                : 'border-[var(--border)] bg-[var(--input)] text-[var(--foreground)] hover:border-[var(--primary)]/40')}>
+                            {savingProjectId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bookmark className="w-3 h-3" />}
+                            {savedProjectIds.includes(r.id) ? 'Saved' : 'Save Project'}
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   ))}

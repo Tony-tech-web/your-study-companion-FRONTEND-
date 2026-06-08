@@ -53,6 +53,16 @@ export interface StudyPlan {
   subjects: string[];
   progress: number;
   totalHours: number;
+  scheduleBlocks?: StudyPlanBlock[];
+  completedSessionIds?: string[];
+}
+
+export interface StudyPlanBlock {
+  day: number;
+  hour: number;
+  subject: string;
+  duration: number;
+  color: string;
 }
 
 export interface GPARecord {
