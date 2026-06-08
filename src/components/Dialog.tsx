@@ -49,38 +49,38 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              className="relative w-full max-w-xs bg-white dark:bg-[#111113] border border-zinc-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-black/20">
+              className="relative w-full max-w-xs bg-[var(--card)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl shadow-black/20">
 
               {/* Icon section */}
               <div className="px-6 pt-7 pb-5 flex flex-col items-center text-center">
                 <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center mb-4',
-                  isDestructive ? 'bg-red-50 dark:bg-red-500/10' :
-                  type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/10' :
-                  'bg-zinc-100 dark:bg-white/5')}>
+                  isDestructive ? 'bg-red-500/10' :
+                  type === 'success' ? 'bg-emerald-500/10' :
+                  'bg-[var(--accent)]')}>
                   {isDestructive
                     ? <Trash2 className="w-7 h-7 text-red-500" />
                     : type === 'success' ? <CheckCircle className="w-7 h-7 text-emerald-500" />
                     : type === 'error' ? <AlertTriangle className="w-7 h-7 text-red-500" />
                     : <Info className="w-7 h-7 text-blue-500" />}
                 </div>
-                <h2 className="text-[16px] font-black text-zinc-900 dark:text-white mb-1.5">
+                <h2 className="text-[16px] font-black text-[var(--foreground)] mb-1.5">
                   {dialog.title || (isDestructive ? 'Delete?' : type === 'success' ? 'Success' : 'Confirm')}
                 </h2>
-                <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{dialog.message}</p>
+                <p className="text-[13px] text-[var(--muted)] leading-relaxed">{dialog.message}</p>
               </div>
 
               {/* Buttons */}
               <div className="px-4 pb-5 flex flex-col gap-2">
                 <button onClick={confirm}
-                  className={cn('w-full py-3 rounded-xl text-[14px] font-bold text-white btn-spring',
+                  className={cn('w-full py-3 rounded-xl text-[14px] font-bold btn-spring',
                     isDestructive ? 'bg-red-500 shadow-lg shadow-red-500/20' :
-                    type === 'success' ? 'bg-emerald-500' : 'bg-white text-black shadow-[var(--shadow-soft)]')}
+                    type === 'success' ? 'bg-emerald-500 text-white' : 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]')}
                   style={{}}>
                   {dialog.confirmLabel || (isDestructive ? 'Delete' : isConfirm ? 'Confirm' : 'OK')}
                 </button>
                 {isConfirm && (
                   <button onClick={cancel}
-                    className="w-full py-3 rounded-xl text-[14px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 btn-spring">
+                    className="w-full py-3 rounded-xl text-[14px] font-semibold text-[var(--muted)] bg-[var(--input)] hover:bg-[var(--accent)] btn-spring">
                     {dialog.cancelLabel || 'Cancel'}
                   </button>
                 )}

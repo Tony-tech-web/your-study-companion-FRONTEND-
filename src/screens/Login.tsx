@@ -17,11 +17,11 @@ const GoogleIcon = () => (
 
 const Field = ({ label, type, value, onChange, placeholder, icon: Icon, right }: any) => (
   <div className="space-y-1.5">
-    <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-[0.08em]">{label}</label>
+    <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[0.08em]">{label}</label>
     <div className="relative">
-      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
       <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full bg-[var(--input)] border border-[var(--border)] rounded-full pl-10 pr-10 py-3 text-[14px] text-white placeholder:text-white/40 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-white/20 transition-all" />
+        className="w-full bg-[var(--input)] border border-[var(--border)] rounded-full pl-10 pr-10 py-3 text-[14px] text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-[var(--primary)]/30 transition-all" />
       {right && <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{right}</div>}
     </div>
   </div>
@@ -89,38 +89,38 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] text-white flex items-center justify-center p-4 py-8">
+    <div className="min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-4 py-8">
       <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm glass-panel rounded-[28px] overflow-hidden">
 
         {/* Top accent */}
-        <div className="h-px w-full bg-white/20" />
+        <div className="h-px w-full bg-[var(--glass-highlight)]" />
 
         <div className="px-8 py-8">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[var(--shadow-soft)]">
-              <Zap className="w-4 h-4 text-black" />
+            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
+              <Zap className="w-4 h-4 text-[var(--primary-foreground)]" />
             </div>
-            <span className="text-[15px] font-black text-white tracking-tight">Orbit</span>
+            <span className="text-[15px] font-black text-[var(--foreground)] tracking-tight">Orbit</span>
           </div>
 
           {/* Title */}
           <div className="mb-6">
-            <h1 className="text-[22px] font-black text-white tracking-tight">
+            <h1 className="text-[22px] font-black text-[var(--foreground)] tracking-tight">
               {mode === 'login' ? 'Sign in' : 'Create account'}
             </h1>
-            <p className="text-[13px] text-zinc-400 mt-0.5">
+            <p className="text-[13px] text-[var(--muted)] mt-0.5">
               {mode === 'login' ? (
                 <>New user?{' '}
-                  <button onClick={() => { setMode('signup'); setError(''); }} className="font-bold text-white hover:text-white/75 transition-colors">
+                  <button onClick={() => { setMode('signup'); setError(''); }} className="font-bold text-[var(--foreground)] hover:opacity-75 transition-colors">
                     Create an account
                   </button>
                 </>
               ) : (
                 <>Already have an account?{' '}
-                  <button onClick={() => { setMode('login'); setError(''); }} className="font-bold text-white hover:text-white/75 transition-colors">
+                  <button onClick={() => { setMode('login'); setError(''); }} className="font-bold text-[var(--foreground)] hover:opacity-75 transition-colors">
                     Sign in
                   </button>
                 </>
@@ -174,7 +174,7 @@ export const Login = () => {
             <Field label="Password" type={showPw ? 'text' : 'password'} value={password}
               onChange={(e: any) => setPassword(e.target.value)} placeholder="Min. 6 characters" icon={Lock}
               right={
-                <button type="button" onClick={() => setShowPw(v => !v)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                <button type="button" onClick={() => setShowPw(v => !v)} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               }
@@ -182,33 +182,33 @@ export const Login = () => {
 
             {mode === 'login' && (
               <div className="flex justify-end">
-                <button className="text-[12px] font-semibold text-white/45 hover:text-white transition-colors">Forgot password?</button>
+                <button className="text-[12px] font-semibold text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Forgot password?</button>
               </div>
             )}
 
             {/* Submit */}
             <button onClick={handleSubmit} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-bold text-black disabled:opacity-50 btn-spring shadow-[var(--shadow-soft)] bg-white hover:bg-white/90">
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-bold text-[var(--primary-foreground)] disabled:opacity-50 btn-spring shadow-[var(--shadow-soft)] bg-[var(--primary)] hover:opacity-90">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
 
             {/* Divider */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-zinc-100 dark:bg-white/8" />
-              <span className="text-[11px] font-medium text-zinc-400">or</span>
-              <div className="flex-1 h-px bg-zinc-100 dark:bg-white/8" />
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[11px] font-medium text-[var(--muted)]">or</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
 
             {/* Social buttons row (right-side reference style) */}
             <div className="flex items-center justify-center gap-3">
               <button onClick={handleGoogle} disabled={googleLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full border border-white/10 bg-white/5 text-[13px] font-semibold text-white/75 hover:bg-white/10 btn-spring transition-all disabled:opacity-50 backdrop-blur-xl">
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full border border-[var(--border)] bg-[var(--input)] text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl">
                 {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
                 <span>Google</span>
               </button>
             </div>
 
-            <p className="text-center text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-center text-[11px] text-[var(--muted)] leading-relaxed">
               By signing in, you agree to Orbit&apos;s{' '}
               <span className="underline cursor-pointer">Terms of Service</span> and{' '}
               <span className="underline cursor-pointer">Privacy Policy</span>
