@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Send, Sparkles, Loader2, Trash2, ChevronDown, Check,
   Brain, FlaskConical, X, FileText, Layers, ListChecks,
-  AlignLeft, BookMarked, ChevronRight, Activity,
+  AlignLeft, BookMarked, ChevronRight, Activity, Copy,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -25,7 +25,7 @@ const stripDecorativeGlyphs = (t: string) =>
 const cleanText = (t: string) => stripDecorativeGlyphs(t.replace(/\{\{[^}]+\}\}/g, ''));
 
 const AI_RESPONSE_STYLE =
-  'Use a mature academic tone. Use short headings, compact paragraphs, and bullets for comparisons. Do not use emoji, decorative glyphs, or markdown pipe tables unless the user explicitly asks for a table.';
+  'Use a mature academic tone. Use short headings, compact paragraphs, and bullets for comparisons. Do not use emoji, decorative glyphs, or markdown pipe tables unless the user explicitly asks for a table. When you include code, provide complete, syntactically valid examples in fenced code blocks with the language name, then briefly explain the important lines.';
 
 const friendlyAIError = (err: any) => {
   const raw = String(err?.message || err || '').trim();
@@ -58,10 +58,42 @@ const renderMarkdown = (text: string) => {
     }
   };
 
-  const parseBold = (s: string) =>
-    s.split(/\*\*(.+?)\*\*/g).map((p, j) => (
-      j % 2 === 1 ? <strong key={j} className="font-black text-[var(--foreground)]">{p}</strong> : p
-    ));
+  const parseInline = (s: string) =>
+    s.split(/(`[^`]+`|\*\*.+?\*\*)/g).map((part, j) => {
+      if (/^`[^`]+`$/.test(part)) {
+        return (
+          <code key={j} className="mx-0.5 rounded-md border border-[var(--border)] bg-[var(--accent)] px-1.5 py-0.5 font-mono text-[12px] font-semibold text-[var(--foreground)]">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (/^\*\*.+\*\*$/.test(part)) {
+        return <strong key={j} className="font-black text-[var(--foreground)]">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+
+  const renderCodeBlock = (startIndex: number, language: string, code: string) => (
+    <div key={`code-${startIndex}`} className="my-3 overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-black/70 shadow-[var(--shadow-deep)] ring-1 ring-white/5">
+      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.06] px-3.5 py-2">
+        <span className="font-reading text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted)]">
+          {language || 'code'}
+        </span>
+        <button
+          type="button"
+          onClick={() => navigator.clipboard?.writeText(code)}
+          className="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.08] px-2.5 font-reading text-[11px] font-bold text-white/75 transition hover:bg-white/[0.14] hover:text-white"
+          aria-label="Copy code"
+        >
+          <Copy className="h-3 w-3" />
+          Copy
+        </button>
+      </div>
+      <pre className="custom-scrollbar max-h-[440px] overflow-auto p-4 text-[13px] leading-6 text-white/90">
+        <code className="font-mono">{code}</code>
+      </pre>
+    </div>
+  );
 
   const isTableRow = (line: string) => /^\s*\|.*\|\s*$/.test(line);
   const isTableDivider = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
@@ -81,7 +113,7 @@ const renderMarkdown = (text: string) => {
             <tr>
               {header.map((cell, cellIndex) => (
                 <th key={`h-${cellIndex}`} className="border-b border-[var(--border)] px-3.5 py-3 text-[11px] font-black uppercase tracking-[0.08em] text-[var(--foreground)]">
-                  {parseBold(cell)}
+                  {parseInline(cell)}
                 </th>
               ))}
             </tr>
@@ -91,7 +123,7 @@ const renderMarkdown = (text: string) => {
               <tr key={`r-${rowIndex}`} className="odd:bg-[var(--accent)]/30">
                 {header.map((_, cellIndex) => (
                   <td key={`c-${rowIndex}-${cellIndex}`} className="border-t border-[var(--border)] px-3.5 py-3 align-top font-medium text-[var(--foreground)]">
-                    {parseBold(row[cellIndex] || '')}
+                    {parseInline(row[cellIndex] || '')}
                   </td>
                 ))}
               </tr>
@@ -104,6 +136,19 @@ const renderMarkdown = (text: string) => {
 
   for (let i = 0; i < lines.length; i++) {
     const line = stripDecorativeGlyphs(lines[i]);
+
+    if (/^\s*```/.test(lines[i])) {
+      flushList();
+      const language = lines[i].replace(/^\s*```/, '').trim();
+      const codeLines: string[] = [];
+      i += 1;
+      while (i < lines.length && !/^\s*```/.test(lines[i])) {
+        codeLines.push(lines[i]);
+        i += 1;
+      }
+      elements.push(renderCodeBlock(i, language, codeLines.join('\n').replace(/\s+$/, '')));
+      continue;
+    }
 
     if (isTableRow(line) && lines[i + 1] && isTableDivider(lines[i + 1])) {
       flushList();
@@ -121,7 +166,7 @@ const renderMarkdown = (text: string) => {
     if (/^[*\-]\s+/.test(line)) {
       listItems.push(
         <li key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)]">
-          {parseBold(line.replace(/^[*\-]\s+/, ''))}
+          {parseInline(line.replace(/^[*\-]\s+/, ''))}
         </li>
       );
     } else {
@@ -138,15 +183,15 @@ const renderMarkdown = (text: string) => {
           : level === 2
             ? 'mt-3 mb-1 text-[15px] font-black leading-snug font-reading'
             : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug font-reading';
-        elements.push(<p key={i} className={`${headingClass} text-[var(--foreground)]`}>{parseBold(heading)}</p>);
+        elements.push(<p key={i} className={`${headingClass} text-[var(--foreground)]`}>{parseInline(heading)}</p>);
       } else if (line.includes('|') && splitLoosePipeRow(line).length >= 2 && !isTableDivider(line)) {
         const cells = splitLoosePipeRow(line);
         elements.push(
           <div key={i} className="my-2 rounded-2xl border border-[var(--border)] bg-[var(--input)] px-3.5 py-3 font-reading">
-            <p className="text-[13px] font-black leading-6 text-[var(--foreground)]">{parseBold(cells[0])}</p>
+            <p className="text-[13px] font-black leading-6 text-[var(--foreground)]">{parseInline(cells[0])}</p>
             <div className="mt-1 space-y-1">
               {cells.slice(1).map((cell, cellIndex) => (
-                <p key={cellIndex} className="text-[13px] font-medium leading-6 text-[var(--muted)]">{parseBold(cell)}</p>
+                <p key={cellIndex} className="text-[13px] font-medium leading-6 text-[var(--muted)]">{parseInline(cell)}</p>
               ))}
             </div>
           </div>
@@ -154,7 +199,7 @@ const renderMarkdown = (text: string) => {
       } else {
         elements.push(
           <p key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)] font-reading">
-            {parseBold(line)}
+            {parseInline(line)}
           </p>
         );
       }
