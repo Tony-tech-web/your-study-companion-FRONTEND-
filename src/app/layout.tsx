@@ -6,6 +6,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Orbit — Academic OS for Elizade University',
   description: 'AI tutoring, GPA tracking, research tools and campus social for Elizade University students.',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
