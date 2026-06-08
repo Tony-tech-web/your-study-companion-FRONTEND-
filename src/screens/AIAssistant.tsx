@@ -36,24 +36,106 @@ const renderMarkdown = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
   let listItems: React.ReactNode[] = [];
+
   const flushList = () => {
     if (listItems.length > 0) {
-      elements.push(<ul key={`ul-${elements.length}`} className="my-1.5 space-y-1 pl-4 list-disc">{listItems}</ul>);
+      elements.push(
+        <ul key={`ul-${elements.length}`} className="my-2 space-y-1.5 pl-4 list-disc marker:text-[var(--primary)]">
+          {listItems}
+        </ul>
+      );
       listItems = [];
     }
   };
+
   const parseBold = (s: string) =>
-    s.split(/\*\*(.+?)\*\*/g).map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p);
-  lines.forEach((line, i) => {
+    s.split(/\*\*(.+?)\*\*/g).map((p, j) => (
+      j % 2 === 1 ? <strong key={j} className="font-black text-[var(--foreground)]">{p}</strong> : p
+    ));
+
+  const isTableRow = (line: string) => /^\s*\|.*\|\s*$/.test(line);
+  const isTableDivider = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+  const splitTableRow = (line: string) =>
+    line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+
+  const renderTable = (startIndex: number, tableLines: string[]) => {
+    const header = splitTableRow(tableLines[0]);
+    const rows = tableLines.slice(2).map(splitTableRow).filter(row => row.some(Boolean));
+
+    return (
+      <div key={`table-${startIndex}`} className="my-3 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--input)] shadow-[var(--shadow-soft)]">
+        <table className="w-full min-w-[520px] border-collapse text-left text-[13px] leading-6">
+          <thead className="bg-[var(--accent)]">
+            <tr>
+              {header.map((cell, cellIndex) => (
+                <th key={`h-${cellIndex}`} className="border-b border-[var(--border)] px-3.5 py-3 text-[11px] font-black uppercase tracking-[0.08em] text-[var(--foreground)]">
+                  {parseBold(cell)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={`r-${rowIndex}`} className="odd:bg-[var(--accent)]/30">
+                {header.map((_, cellIndex) => (
+                  <td key={`c-${rowIndex}-${cellIndex}`} className="border-t border-[var(--border)] px-3.5 py-3 align-top font-medium text-[var(--foreground)]">
+                    {parseBold(row[cellIndex] || '')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (isTableRow(line) && lines[i + 1] && isTableDivider(lines[i + 1])) {
+      flushList();
+      const tableLines = [line, lines[i + 1]];
+      i += 2;
+      while (i < lines.length && isTableRow(lines[i])) {
+        tableLines.push(lines[i]);
+        i += 1;
+      }
+      i -= 1;
+      elements.push(renderTable(i, tableLines));
+      continue;
+    }
+
     if (/^[*\-]\s+/.test(line)) {
-      listItems.push(<li key={i} className="text-sm leading-relaxed">{parseBold(line.replace(/^[*\-]\s+/, ''))}</li>);
+      listItems.push(
+        <li key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)]">
+          {parseBold(line.replace(/^[*\-]\s+/, ''))}
+        </li>
+      );
     } else {
       flushList();
-      if (!line.trim()) elements.push(<div key={i} className="h-1" />);
-      else if (/^#{1,3}\s+/.test(line)) elements.push(<p key={i} className="text-sm font-semibold mt-2 mb-0.5">{parseBold(line.replace(/^#{1,3}\s+/, ''))}</p>);
-      else elements.push(<p key={i} className="text-sm leading-relaxed">{parseBold(line)}</p>);
+      if (!line.trim()) {
+        elements.push(<div key={i} className="h-1" />);
+      } else if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) {
+        elements.push(<div key={i} className="my-3 h-px bg-[var(--border)]" />);
+      } else if (/^#{1,3}\s+/.test(line)) {
+        const level = line.match(/^#{1,3}/)?.[0].length || 1;
+        const heading = line.replace(/^#{1,3}\s+/, '');
+        const headingClass = level === 1
+          ? 'mt-3 mb-1.5 text-[17px] font-black leading-snug'
+          : level === 2
+            ? 'mt-3 mb-1 text-[15px] font-black leading-snug'
+            : 'mt-2.5 mb-1 text-[14px] font-extrabold leading-snug';
+        elements.push(<p key={i} className={`${headingClass} text-[var(--foreground)]`}>{parseBold(heading)}</p>);
+      } else {
+        elements.push(
+          <p key={i} className="text-[14px] font-medium leading-7 text-[var(--foreground)]">
+            {parseBold(line)}
+          </p>
+        );
+      }
     }
-  });
+  }
   flushList();
   return elements;
 };
@@ -681,7 +763,7 @@ export const AIAssistant = () => {
                   </div>
                   <div className={cn('px-4 py-3 rounded-2xl max-w-[85%] shadow-sm',
                     msg.role === 'user' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-none text-sm' : 'bg-[var(--card)] border border-[var(--border)] rounded-tl-none')}>
-                    {msg.role === 'assistant' ? <div className="space-y-0.5">{renderMarkdown(msg.content)}</div> : msg.content}
+                    {msg.role === 'assistant' ? <div className="space-y-2 font-sans">{renderMarkdown(msg.content)}</div> : msg.content}
                   </div>
                 </motion.div>
               ))}
@@ -693,7 +775,7 @@ export const AIAssistant = () => {
                   <Sparkles className="w-3.5 h-3.5 text-[var(--primary)] animate-pulse" />
                 </div>
                 <div className="px-4 py-3 rounded-2xl rounded-tl-none bg-[var(--card)] border border-[var(--primary)]/30 max-w-[85%]">
-                  <div className="space-y-0.5">{renderMarkdown(streaming)}</div>
+                  <div className="space-y-2 font-sans">{renderMarkdown(streaming)}</div>
                   <span className="inline-block w-1 h-4 bg-[var(--primary)] animate-pulse ml-1 rounded-sm align-middle" />
                 </div>
               </motion.div>
