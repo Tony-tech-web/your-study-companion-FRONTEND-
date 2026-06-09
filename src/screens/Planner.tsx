@@ -12,6 +12,7 @@ import {
 import { getStudyPlans, createStudyPlan, updateStudyPlan, deleteStudyPlan, randomizeStudyPlan } from '../services/planner';
 import { callEdgeFunction } from '../lib/supabase';
 import { StudyPlan, StudyPlanBlock } from '../types';
+import { getBillingUsage, recordAiUsageEvent } from '../services/billing';
 
 // Time slots shown in the schedule column
 const HOURS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
@@ -84,9 +85,12 @@ const CreateModal = ({ onClose, onSave, initialPlan }: { onClose: () => void; on
     if (!name || !hours || !subjectsInput) { setError('All fields are required'); return; }
     setError(''); setStep('generating');
     try {
+      const usage = await getBillingUsage().catch(() => null);
+      if (usage?.ai_token_limit > 0 && usage?.tokens_remaining <= 0) {
+        throw new Error('AI token allowance exhausted');
+      }
       const subjects = subjectsInput.split(',').map(s => s.trim()).filter(Boolean);
-      const res = await callEdgeFunction('ai-chat', {
-        messages: [{
+      const messages = [{
           role: 'user',
           content: `Generate a weekly study schedule for "${name}".
 Subjects: ${subjects.join(', ')}
@@ -101,7 +105,9 @@ Return ONLY valid JSON in this exact format:
   "summary": "Brief description of the schedule"
 }
 day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: ${COLORS.slice(0, subjects.length).join(',')}. Only JSON, no markdown, no emoji, no decorative glyphs.`
-        }],
+        }];
+      const res = await callEdgeFunction('ai-chat', {
+        messages,
         providerId: 'auto',
         mode: 'chat',
       });
@@ -110,6 +116,12 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
       const text = data.text || data.reply || data.message || '';
       const json = text.replace(/```json|```/g, '').trim();
       const parsed: GeneratedSchedule = JSON.parse(json);
+      await recordAiUsageEvent({
+        provider: 'edge:auto',
+        feature: 'planner_generate',
+        prompt: messages,
+        completion: text,
+      }).catch(() => {});
       setSchedule(parsed);
       setStep('schedule');
     } catch {

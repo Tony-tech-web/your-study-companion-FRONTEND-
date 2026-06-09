@@ -14,6 +14,7 @@ import { getAIConversations, saveAIConversation, clearAIConversations, AIConvers
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useDialog } from '../components/Dialog';
+import { getBillingUsage, recordAiUsageEvent } from '../services/billing';
 
 const stripDecorativeGlyphs = (t: string) =>
   t
@@ -32,6 +33,9 @@ const friendlyAIError = (err: any) => {
   const lower = raw.toLowerCase();
   if (lower.includes('insufficient_quota') || lower.includes('429') || lower.includes('quota')) {
     return 'Orbit could not generate a response because the active AI provider is out of quota. Check the provider key or billing in Supabase, then try again.';
+  }
+  if (lower.includes('allowance exhausted')) {
+    return 'Your Orbit AI token allowance has been used for this billing period. Upgrade or renew your plan to continue.';
   }
   if (lower.includes('all ai providers failed') || lower.includes('provider')) {
     return 'Orbit could not reach an available AI provider right now. Check API Status and the Supabase provider secrets.';
@@ -605,18 +609,25 @@ export const AIAssistant = () => {
   const sendToAI = async (userText: string, overrideMode?: ChatMode, ctx?: string, scan?: { current: number; total: number }) => {
     setIsLoading(true); setStreaming('');
     try {
+      const usage = await getBillingUsage().catch(() => null);
+      if (usage?.ai_token_limit > 0 && usage?.tokens_remaining <= 0) {
+        throw new Error('AI token allowance exhausted');
+      }
       const userMsg = await saveAIConversation('user', userText);
       setMessages(prev => [...prev, userMsg]);
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
+      const promptMessages = [{ role: 'system', content: AI_RESPONSE_STYLE }, ...history, { role: 'user', content: userText }];
+      const providerId = autoSwitch ? 'auto' : model;
       const res = await callEdgeFunction('ai-chat', {
-        messages: [{ role: 'system', content: AI_RESPONSE_STYLE }, ...history, { role: 'user', content: userText }],
-        providerId: autoSwitch ? 'auto' : model,
+        messages: promptMessages,
+        providerId,
         mode: overrideMode ?? mode,
         ...(ctx ?? pdfContext ? { pdfContext: ctx ?? pdfContext } : {}),
         ...(scan ? { scanProgress: scan } : {}),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || `HTTP ${res.status}`); }
       const ct = res.headers.get('content-type') || '';
+      let finalText = '';
       if (ct.includes('text/event-stream')) {
         const reader = res.body?.getReader(); const dec = new TextDecoder(); let full = '';
         if (reader) while (true) {
@@ -627,14 +638,22 @@ export const AIAssistant = () => {
           }
         }
         setStreaming('');
-        const aiMsg1 = await saveAIConversation('assistant', cleanText(full) || 'No response.');
+        finalText = cleanText(full) || 'No response.';
+        const aiMsg1 = await saveAIConversation('assistant', finalText);
         setMessages(prev => [...prev, aiMsg1]);
       } else {
         const data = await res.json();
         setStreaming('');
-        const aiMsg2 = await saveAIConversation('assistant', cleanText(data.text || data.reply || data.message || 'No response.'));
+        finalText = cleanText(data.text || data.reply || data.message || 'No response.');
+        const aiMsg2 = await saveAIConversation('assistant', finalText);
         setMessages(prev => [...prev, aiMsg2]);
       }
+      await recordAiUsageEvent({
+        provider: `edge:${providerId}`,
+        feature: overrideMode ? `ai_${overrideMode}` : `ai_${mode}`,
+        prompt: { promptMessages, context: ctx ?? pdfContext, scan },
+        completion: finalText,
+      }).catch(() => {});
       await updateXP('ai_chat');
     } catch (err: any) {
       setStreaming('');

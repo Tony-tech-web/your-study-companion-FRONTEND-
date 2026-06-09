@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { getBillingUsage } from '../services/billing';
+import { deactivateAccount, deleteAccount } from '../services/account';
 
 const themeOptions = [
   { value: 'dark', label: 'Dark', detail: 'Premium black glass', Icon: Moon },
@@ -32,6 +33,7 @@ export const Settings = () => {
   const [usage, setUsage] = React.useState<any>(null);
   const [usageLoading, setUsageLoading] = React.useState(true);
   const [resetMessage, setResetMessage] = React.useState('');
+  const [securityBusy, setSecurityBusy] = React.useState(false);
   const displayName = (user?.user_metadata?.full_name as string) || user?.email?.split('@')[0] || 'Student';
 
   React.useEffect(() => {
@@ -52,6 +54,30 @@ export const Settings = () => {
       redirectTo: `${window.location.origin}/auth/callback`,
     });
     setResetMessage(error ? error.message : 'Password reset email sent.');
+  };
+
+  const handleDeactivate = async () => {
+    if (!window.confirm('Deactivate your Orbit account on this profile? You can sign back in later to reactivate.')) return;
+    setSecurityBusy(true);
+    try {
+      await deactivateAccount();
+      await signOut();
+      router.push('/login');
+    } finally {
+      setSecurityBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Permanently delete your Orbit account and app data? This cannot be undone.')) return;
+    setSecurityBusy(true);
+    try {
+      await deleteAccount();
+      await signOut();
+      router.push('/login');
+    } finally {
+      setSecurityBusy(false);
+    }
   };
 
   return (
@@ -135,13 +161,26 @@ export const Settings = () => {
                   <span className="text-[var(--muted)]">{usage?.ai_token_limit ? usage.ai_token_limit.toLocaleString() : 'No active plan'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
+                  <span className="font-black">Tokens used</span>
+                  <span className="text-[var(--muted)]">{usage?.tokens_used?.toLocaleString?.() ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-black">Tokens remaining</span>
+                  <span className="text-[var(--muted)]">{usage?.tokens_remaining === null ? 'Plan required' : usage?.tokens_remaining?.toLocaleString?.() ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
                   <span className="font-black">AI interactions</span>
                   <span className="text-[var(--muted)]">{usage?.total_ai_interactions ?? 0}</span>
                 </div>
-                {!usage?.token_metering_enabled && (
-                  <p className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 text-xs text-[var(--muted)]">
-                    Token metering is waiting on provider-level usage telemetry. Until then, Orbit shows your plan allowance and real interaction count.
-                  </p>
+                {usage?.usage?.by_provider && Object.keys(usage.usage.by_provider).length > 0 && (
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 text-xs text-[var(--muted)]">
+                    {Object.entries(usage.usage.by_provider).map(([provider, item]: any) => (
+                      <div key={provider} className="flex justify-between gap-3 py-1">
+                        <span>{provider}</span>
+                        <span>{item.tokens.toLocaleString()} tokens</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
@@ -165,10 +204,15 @@ export const Settings = () => {
                 className="flex w-full items-center justify-between rounded-[22px] border border-[var(--border)] bg-[var(--input)] p-4 text-left transition-all hover:border-[var(--primary)]/35">
                 <span className="flex items-center gap-3 text-sm font-black"><KeyRound className="h-5 w-5" /> Reset password</span>
               </button>
-              <button disabled
-                className="flex w-full cursor-not-allowed items-center justify-between rounded-[22px] border border-red-500/15 bg-red-500/5 p-4 text-left opacity-70">
-                <span className="flex items-center gap-3 text-sm font-black text-red-300"><Trash2 className="h-5 w-5" /> Delete or deactivate account</span>
-                <span className="text-xs text-[var(--muted)]">Admin review required</span>
+              <button disabled={securityBusy} onClick={handleDeactivate}
+                className="flex w-full items-center justify-between rounded-[22px] border border-orange-500/20 bg-orange-500/5 p-4 text-left transition hover:bg-orange-500/10 disabled:opacity-60">
+                <span className="flex items-center gap-3 text-sm font-black text-orange-200"><Trash2 className="h-5 w-5" /> Deactivate account</span>
+                <span className="text-xs text-[var(--muted)]">Pause profile</span>
+              </button>
+              <button disabled={securityBusy} onClick={handleDelete}
+                className="flex w-full items-center justify-between rounded-[22px] border border-red-500/20 bg-red-500/5 p-4 text-left transition hover:bg-red-500/10 disabled:opacity-60">
+                <span className="flex items-center gap-3 text-sm font-black text-red-300"><Trash2 className="h-5 w-5" /> Delete account</span>
+                <span className="text-xs text-[var(--muted)]">Permanent</span>
               </button>
               {resetMessage && <p className="text-xs font-bold text-emerald-300">{resetMessage}</p>}
             </div>
