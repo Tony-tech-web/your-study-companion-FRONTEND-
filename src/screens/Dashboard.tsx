@@ -35,6 +35,11 @@ export const Dashboard = () => {
     { label: 'AI Sessions', value: String(stats.aiInteractions), sub: 'Total', icon: Brain, color: '#6366f1', href: '/ai' },
     { label: 'Study Time', value: stats.studyMinutes >= 60 ? `${Math.floor(stats.studyMinutes/60)}h` : `${stats.studyMinutes}m`, sub: 'Tracked', icon: Clock, color: '#8b5cf6' },
   ];
+  const workspaceCards = [
+    { label: 'AI Assistant', sub: 'Chat, teach, test', href: '/ai', image: '/dashboard/ai-card.png', wide: true },
+    { label: 'Planner', sub: `${tasks.length} active`, href: '/planner', image: '/dashboard/planner-card.png' },
+    { label: 'Research', sub: `${stats.researchMinutes}m logged`, href: '/research', image: '/dashboard/research-card.png' },
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] custom-scrollbar">
@@ -177,27 +182,40 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          {/* Quick actions */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)] mb-4">Quick Actions</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: 'AI Tutor',    sub: 'Start session',  href: '/ai',       color: '#6366f1' },
-                { label: 'Log GPA',     sub: 'Add semester',   href: '/gpa',      color: '#10b981' },
-                { label: 'Upload PDF',  sub: 'Add course doc', href: '/courses',  color: '#8b5cf6' },
-                { label: 'Research',    sub: 'Scholar search', href: '/research', color: 'var(--primary)' },
-              ].map(a => (
-                <button
+          {/* Workspace cards */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[var(--foreground)]">Workspace</p>
+              <span className="text-[11px] font-semibold text-[var(--muted)]">Live tools</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {workspaceCards.map((a, i) => (
+                <motion.button
                   key={a.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 + i * 0.05, duration: 0.28 }}
                   onClick={() => router.push(a.href)}
-                  className="p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/40 hover:bg-[var(--accent)] transition-all text-left group"
+                  className={cn(
+                    'group relative min-h-[154px] overflow-hidden rounded-[28px] border border-white/10 p-4 text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 active:scale-[0.99]',
+                    a.wide && 'col-span-2 min-h-[178px]'
+                  )}
+                  style={{
+                    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.38)), url(${a.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
                 >
-                  <div className="w-7 h-7 rounded-lg mb-2.5 flex items-center justify-center" style={{ backgroundColor: `${a.color}18` }}>
-                    <Plus className="w-3.5 h-3.5" style={{ color: a.color }} />
+                  <div className="relative z-10 flex h-full min-h-[122px] flex-col justify-between">
+                    <div>
+                      <p className="max-w-[78%] truncate text-base font-black text-white">{a.label}</p>
+                      <p className="mt-1 max-w-[78%] truncate text-xs font-bold text-white/65">{a.sub}</p>
+                    </div>
+                    <span className="inline-flex h-9 w-fit items-center rounded-full bg-white px-4 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
+                      Open
+                    </span>
                   </div>
-                  <p className="text-[13px] font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">{a.label}</p>
-                  <p className="text-[11px] text-[var(--muted)] mt-0.5">{a.sub}</p>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>

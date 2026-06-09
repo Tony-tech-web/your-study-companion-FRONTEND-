@@ -36,6 +36,7 @@ export const Settings = () => {
   const [resetMessage, setResetMessage] = React.useState('');
   const [securityBusy, setSecurityBusy] = React.useState(false);
   const displayName = (user?.user_metadata?.full_name as string) || user?.email?.split('@')[0] || 'Student';
+  const avatarUrl = (user?.user_metadata?.avatar_url as string) || (user?.user_metadata?.picture as string) || '';
 
   const loadUsage = React.useCallback(() => {
     let alive = true;
@@ -120,17 +121,43 @@ export const Settings = () => {
           <p className="text-xs text-[var(--muted)] mt-1">Profile, billing, security, usage, and theme controls.</p>
         </div>
 
-        <div className="glass-panel rounded-[22px] p-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xs font-black">
-            {displayName.slice(0, 2).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-black truncate">{displayName}</p>
-            <p className="text-xs text-[var(--muted)] truncate mt-0.5">{user?.email}</p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-emerald-400 text-[11px] font-bold rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Authenticated
+        <div className="glass-panel overflow-hidden rounded-[30px] p-0">
+          <div className="h-24 border-b border-[var(--border)] bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.16),transparent_28%),linear-gradient(135deg,var(--input),var(--card))]" />
+          <div className="px-4 pb-4">
+            <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex min-w-0 items-end gap-3">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[26px] border-4 border-[var(--background)] bg-[var(--primary)] text-lg font-black text-[var(--primary-foreground)] shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
+                  {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 pb-1">
+                  <p className="truncate text-xl font-black">{displayName}</p>
+                  <p className="mt-0.5 truncate text-xs font-semibold text-[var(--muted)]">{user?.email}</p>
+                </div>
+              </div>
+              <div className="flex w-full gap-2 sm:w-auto">
+                <div className="flex flex-1 items-center justify-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[11px] font-black text-emerald-300 sm:flex-none">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Authenticated
+                </div>
+                <Link href="/billing" className="flex flex-1 items-center justify-center rounded-full bg-[var(--primary)] px-4 py-2 text-[11px] font-black text-[var(--primary-foreground)] sm:flex-none">
+                  Billing
+                </Link>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
+                <p className="text-[10px] font-black uppercase text-[var(--muted)]">Theme</p>
+                <p className="mt-1 truncate text-sm font-black capitalize">{theme || 'System'}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
+                <p className="text-[10px] font-black uppercase text-[var(--muted)]">Tokens</p>
+                <p className="mt-1 truncate text-sm font-black">{usageLoading ? 'Syncing' : usage?.tokens_remaining === null ? 'Plan' : usage?.tokens_remaining?.toLocaleString?.() ?? 0}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
+                <p className="text-[10px] font-black uppercase text-[var(--muted)]">Email</p>
+                <p className="mt-1 truncate text-sm font-black">{user?.email_confirmed_at ? 'Verified' : 'Pending'}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -186,8 +213,12 @@ export const Settings = () => {
 
           <Section title="Usage">
             {usageLoading ? (
-              <div className="flex min-h-20 items-center">
+              <div className="flex min-h-24 items-center gap-3 rounded-[20px] border border-[var(--border)] bg-[var(--input)] p-4">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--muted)]" />
+                <div>
+                  <p className="text-sm font-black">Syncing usage</p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">Checking backend allowance and provider totals.</p>
+                </div>
               </div>
             ) : usageError ? (
               <div className="rounded-[20px] border border-red-500/20 bg-red-500/10 p-3">
