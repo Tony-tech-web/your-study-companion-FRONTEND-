@@ -24,6 +24,34 @@ const COLORS = ['#6366f1','#10b981','#f27d26','#8b5cf6','#f59e0b','#ef4444','#06
 const getDayLabel = (d: number) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d];
 const today = new Date().getDay();
 const pad = (n: number) => String(n).padStart(2, '0');
+const getBlockMinute = (block: StudyPlanBlock) => Number.isFinite(block.minute) ? block.minute! : 0;
+const getDurationMinutes = (block: StudyPlanBlock) => Number.isFinite(block.durationMinutes) ? block.durationMinutes! : Math.max(15, Math.round((block.duration || 1) * 60));
+const formatBlockTime = (block: StudyPlanBlock) => {
+  const hour = Math.max(0, Math.min(23, Number(block.hour) || 0));
+  const minute = Math.max(0, Math.min(59, getBlockMinute(block)));
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${pad(minute)} ${suffix}`;
+};
+const formatDuration = (block: StudyPlanBlock) => {
+  const mins = getDurationMinutes(block);
+  if (mins % 60 === 0) return `${mins / 60}h`;
+  if (mins < 60) return `${mins}m`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+};
+const blockStartMinutes = (block: StudyPlanBlock) => (Number(block.hour) || 0) * 60 + getBlockMinute(block);
+const normalizeBlocks = (blocks: StudyPlanBlock[] = []) => blocks.map((block, index) => {
+  const durationMinutes = getDurationMinutes(block);
+  return {
+    ...block,
+    day: Math.max(0, Math.min(6, Number(block.day) || 0)),
+    hour: Math.max(0, Math.min(23, Number(block.hour) || 9)),
+    minute: Math.max(0, Math.min(59, getBlockMinute(block))),
+    duration: Math.max(0.25, Math.round((durationMinutes / 60) * 4) / 4),
+    durationMinutes,
+    color: block.color || COLORS[index % COLORS.length],
+  };
+});
 
 const nextDateForDay = (day: number, time: string) => {
   const now = new Date();
@@ -99,12 +127,12 @@ Days per week: ${daysPerWeek}
 Return ONLY valid JSON in this exact format:
 {
   "blocks": [
-    { "day": 1, "hour": 9, "subject": "Math", "duration": 2, "color": "#6366f1" },
+    { "day": 1, "hour": 9, "minute": 30, "subject": "Math", "duration": 1.5, "durationMinutes": 90, "color": "#6366f1" },
     ...
   ],
   "summary": "Brief description of the schedule"
 }
-day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: ${COLORS.slice(0, subjects.length).join(',')}. Only JSON, no markdown, no emoji, no decorative glyphs.`
+day is 0=Sun,1=Mon,...,6=Sat. hour is 24h, minute must be 0, 15, 30, or 45. durationMinutes must be 45, 60, 75, 90, or 120. Use readable AM/PM-friendly study times between 7:00 and 21:00. Use these colors: ${COLORS.slice(0, subjects.length).join(',')}. Only JSON, no markdown, no emoji, no decorative glyphs.`
         }];
       const res = await callEdgeFunction('ai-chat', {
         messages,
@@ -116,6 +144,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
       const text = data.text || data.reply || data.message || '';
       const json = text.replace(/```json|```/g, '').trim();
       const parsed: GeneratedSchedule = JSON.parse(json);
+      parsed.blocks = normalizeBlocks(parsed.blocks || []);
       await recordAiUsageEvent({
         provider: 'edge:auto',
         feature: 'planner_generate',
@@ -132,7 +161,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
           totalHours: parseInt(hours) || fallbackSubjects.length,
           daysPerWeek: parseInt(daysPerWeek) || 5,
         });
-        setSchedule({ blocks: randomized.blocks, summary: randomized.summary });
+        setSchedule({ blocks: normalizeBlocks(randomized.blocks), summary: randomized.summary });
       } catch {
         setSchedule({ blocks: [], summary: 'Could not generate a schedule. You can still save the plan and try again later.' });
       }
@@ -148,7 +177,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
         name, subjects,
         totalHours: parseInt(hours) || 0,
         progress: initialPlan?.progress || 0,
-        scheduleBlocks: schedule?.blocks || initialPlan?.scheduleBlocks || [],
+        scheduleBlocks: normalizeBlocks(schedule?.blocks || initialPlan?.scheduleBlocks || []),
         completedSessionIds: initialPlan?.completedSessionIds || [],
       };
       const plan = initialPlan ? await updateStudyPlan(initialPlan.id, payload) : await createStudyPlan(payload);
@@ -214,6 +243,12 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
                   <Brain className="w-4 h-4" /> Preview AI Schedule
                 </button>
               )}
+              {initialPlan && (
+                <button onClick={() => { setSchedule({ blocks: normalizeBlocks(initialPlan.scheduleBlocks || []), summary: 'Edit exact days, start times, and durations before saving.' }); setStep('schedule'); }}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold border border-[var(--border)] text-[var(--foreground)] flex items-center justify-center gap-2 hover:bg-[var(--accent)] transition-all">
+                  <Clock className="w-4 h-4" /> Edit Schedule Times
+                </button>
+              )}
             </div>
           )}
 
@@ -229,7 +264,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
           )}
 
           {step === 'schedule' && schedule && (
-            <SchedulePreview schedule={schedule} name={name} subjectsInput={subjectsInput} hours={hours} onSave={handleSave} saving={saving} error={error} />
+            <SchedulePreview schedule={schedule} onBlocksChange={(blocks: StudyPlanBlock[]) => setSchedule(prev => ({ summary: prev?.summary || 'Manual schedule', blocks: normalizeBlocks(blocks) }))} onSave={handleSave} saving={saving} error={error} />
           )}
         </div>
       </motion.div>
@@ -238,8 +273,11 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
 };
 
 // ── Schedule Preview inside the modal ────────────────────────────────────────
-const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving, error }: any) => {
-  const days = [1,2,3,4,5,6,0]; // Mon–Sun
+const SchedulePreview = ({ schedule, onBlocksChange, onSave, saving, error }: { schedule: GeneratedSchedule; onBlocksChange: (blocks: StudyPlanBlock[]) => void; onSave: () => void; saving: boolean; error?: string }) => {
+  const days = [1,2,3,4,5,6,0]; // Mon-Sun
+  const updateBlock = (index: number, patch: Partial<StudyPlanBlock>) => {
+    onBlocksChange(schedule.blocks.map((block, i) => i === index ? { ...block, ...patch } : block));
+  };
 
   return (
     <div className="p-6 space-y-5">
@@ -284,16 +322,17 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
                       d === today ? 'bg-[var(--primary)]/3' : '')} />
                   ))}
                   {/* Schedule blocks */}
-                  {schedule.blocks.filter((b: StudyPlanBlock) => b.day === d).map((block: StudyPlanBlock, bi: number) => {
+                  {schedule.blocks.filter((b: StudyPlanBlock) => b.day === d).map((block: StudyPlanBlock) => {
+                    const blockIndex = schedule.blocks.indexOf(block);
                     const startHour = parseInt(HOURS[0]);
-                    const topOffset = (block.hour - startHour) * 40; // 40px per hour
-                    const height = Math.max(block.duration * 40 - 2, 32);
+                    const topOffset = ((blockStartMinutes(block) - startHour * 60) / 60) * 40;
+                    const height = Math.max((getDurationMinutes(block) / 60) * 40 - 2, 32);
                     if (block.hour < startHour || block.hour >= startHour + HOURS.length) return null;
                     return (
-                      <div key={bi} className="absolute inset-x-0.5 rounded-md overflow-hidden flex flex-col justify-center px-1.5"
+                      <div key={blockIndex} className="absolute inset-x-0.5 rounded-md overflow-hidden flex flex-col justify-center px-1.5"
                         style={{ top: topOffset + 2, height, backgroundColor: block.color + 'cc' }}>
                         <p className="text-[9px] font-bold text-white truncate leading-tight">{block.subject}</p>
-                        <p className="text-[8px] text-white/70">{block.duration}h</p>
+                        <p className="text-[8px] text-white/70">{formatBlockTime(block)} - {formatDuration(block)}</p>
                       </div>
                     );
                   })}
@@ -306,6 +345,44 @@ const SchedulePreview = ({ schedule, name, subjectsInput, hours, onSave, saving,
         <div className="bg-[var(--input)] border border-[var(--border)] rounded-xl p-8 text-center">
           <Calendar className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
           <p className="text-sm text-[var(--muted)] opacity-40">No schedule generated. Plan will be saved without a calendar.</p>
+        </div>
+      )}
+
+      {schedule.blocks.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Manual time editor</p>
+          {schedule.blocks.map((block, index) => (
+            <div key={`${block.subject}-${index}`} className="grid grid-cols-12 gap-2 rounded-xl border border-[var(--border)] bg-[var(--input)] p-3">
+              <div className="col-span-12 sm:col-span-4">
+                <label className="block text-[10px] font-bold uppercase text-[var(--muted)]">Subject</label>
+                <input value={block.subject} onChange={e => updateBlock(index, { subject: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none" />
+              </div>
+              <div className="col-span-4 sm:col-span-2">
+                <label className="block text-[10px] font-bold uppercase text-[var(--muted)]">Day</label>
+                <select value={block.day} onChange={e => updateBlock(index, { day: Number(e.target.value) })}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2 text-xs text-[var(--foreground)] outline-none">
+                  {[0,1,2,3,4,5,6].map(day => <option key={day} value={day}>{getDayLabel(day)}</option>)}
+                </select>
+              </div>
+              <div className="col-span-4 sm:col-span-3">
+                <label className="block text-[10px] font-bold uppercase text-[var(--muted)]">Start</label>
+                <input type="time" value={`${pad(block.hour)}:${pad(getBlockMinute(block))}`} onChange={e => {
+                  const [hour, minute] = e.target.value.split(':').map(Number);
+                  updateBlock(index, { hour, minute });
+                }} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2 text-xs text-[var(--foreground)] outline-none" />
+              </div>
+              <div className="col-span-4 sm:col-span-3">
+                <label className="block text-[10px] font-bold uppercase text-[var(--muted)]">Duration</label>
+                <select value={getDurationMinutes(block)} onChange={e => {
+                  const durationMinutes = Number(e.target.value);
+                  updateBlock(index, { durationMinutes, duration: Math.round((durationMinutes / 60) * 4) / 4 });
+                }} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2 text-xs text-[var(--foreground)] outline-none">
+                  {[30,45,60,75,90,120,150,180].map(mins => <option key={mins} value={mins}>{mins < 60 ? `${mins}m` : mins % 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins / 60}h`}</option>)}
+                </select>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -336,15 +413,17 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
       return {
         day,
         hour: parseInt(time.split(':')[0], 10),
+        minute: 0,
         subject,
         duration: Math.max(1, Math.round(plan.totalHours / Math.max(plan.subjects.length, 1))),
+        durationMinutes: Math.max(60, Math.round(plan.totalHours / Math.max(plan.subjects.length, 1)) * 60),
         color: colors[index % colors.length],
       };
     });
   }, [plan.subjects, plan.totalHours]);
 
-  const scheduleBlocks = plan.scheduleBlocks?.length ? plan.scheduleBlocks : fallbackBlocks;
-  const sessionId = (block: StudyPlanBlock) => `${plan.id}-${block.day}-${block.hour}-${block.subject}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  const scheduleBlocks = normalizeBlocks(plan.scheduleBlocks?.length ? plan.scheduleBlocks : fallbackBlocks);
+  const sessionId = (block: StudyPlanBlock) => `${plan.id}-${block.day}-${block.hour}-${getBlockMinute(block)}-${block.subject}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
 
   const progress = useMemo(() => {
     if (scheduleBlocks.length === 0) return plan.progress;
@@ -388,17 +467,20 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
     ? Math.round(plan.totalHours / plan.subjects.length)
     : 2;
 
-  const weekSchedule: { day: number; sessions: { id: string; subject: string; time: string; color: string; duration: number }[] }[] = weekDays.map(day => ({
+  const weekSchedule: { day: number; sessions: { id: string; subject: string; time: string; timeLabel: string; color: string; duration: number; durationMinutes: number }[] }[] = weekDays.map(day => ({
     day,
     sessions: scheduleBlocks
       .filter(block => block.day === day)
       .map(block => ({
         id: sessionId(block),
         subject: block.subject,
-        time: `${pad(block.hour)}:00`,
+        time: `${pad(block.hour)}:${pad(getBlockMinute(block))}`,
+        timeLabel: formatBlockTime(block),
         color: block.color || colors[plan.subjects.indexOf(block.subject) % colors.length] || colors[0],
         duration: block.duration || 1,
-      })),
+        durationMinutes: getDurationMinutes(block),
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time)),
   }));
 
   return (
@@ -504,15 +586,19 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
                           d === today ? 'bg-[var(--primary)]/3' : '')} />
                       ))}
                       {/* Sessions */}
-                      {dayData?.sessions.map((sess, si) => {
-                        const hourIndex = HOURS.indexOf(sess.time);
-                        if (hourIndex < 0 || hourIndex >= 10) return null;
+                      {dayData?.sessions.map((sess) => {
+                        const [hour, minute] = sess.time.split(':').map(Number);
+                        const startMinutes = hour * 60 + (minute || 0);
+                        const gridStart = parseInt(HOURS[0]) * 60;
+                        const gridEnd = gridStart + 10 * 60;
+                        if (startMinutes < gridStart || startMinutes >= gridEnd) return null;
                         const done = completedSlots.has(sess.id);
                         return (
-                          <button key={sess.id} onClick={() => handleConfirmSession(sess.id, sess.subject, `${getDayLabel(d)} ${sess.time}`)}
+                          <button key={sess.id} onClick={() => handleConfirmSession(sess.id, sess.subject, `${getDayLabel(d)} ${sess.timeLabel}`)}
                             className="absolute inset-x-0.5 rounded-lg flex flex-col justify-center px-1.5 py-1 transition-all hover:opacity-90 active:scale-95"
-                            style={{ top: hourIndex * 48 + 2, height: 44, backgroundColor: done ? sess.color : sess.color + '33', borderWidth: 1, borderColor: done ? sess.color : sess.color + '66' }}>
+                            style={{ top: ((startMinutes - gridStart) / 60) * 48 + 2, height: Math.max((sess.durationMinutes / 60) * 48 - 4, 38), backgroundColor: done ? sess.color : sess.color + '33', borderWidth: 1, borderColor: done ? sess.color : sess.color + '66' }}>
                             <p className="text-[9px] font-bold truncate" style={{ color: done ? '#fff' : sess.color }}>{sess.subject}</p>
+                            <p className="text-[8px] font-semibold truncate" style={{ color: done ? 'rgba(255,255,255,0.75)' : sess.color }}>{sess.timeLabel}</p>
                             {done && <CheckCircle2 className="w-2.5 h-2.5 text-white mt-0.5" />}
                           </button>
                         );
@@ -539,7 +625,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
                   className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)] px-3 py-2 text-left hover:border-[var(--primary)]/40 transition-all">
                   <span className="min-w-0">
                     <span className="block text-[12px] font-semibold text-[var(--foreground)] truncate">{sess.subject}</span>
-                    <span className="block text-[10px] text-[var(--muted)]">{getDayLabel(sess.day)} {sess.time} - adds a 15 min reminder</span>
+                    <span className="block text-[10px] text-[var(--muted)]">{getDayLabel(sess.day)} {sess.timeLabel} - adds a 15 min reminder</span>
                   </span>
                   <Calendar className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" />
                 </button>
@@ -687,11 +773,11 @@ export const Planner = () => {
           ) : (
             <div className="space-y-2">
               {selectedSessions.map(({ plan, block }) => (
-                <div key={`${plan.id}-${block.day}-${block.hour}-${block.subject}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
+                <div key={`${plan.id}-${block.day}-${block.hour}-${getBlockMinute(block)}-${block.subject}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
                   <div className="h-9 w-1.5 rounded-full" style={{ backgroundColor: block.color || 'var(--primary)' }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold text-[var(--foreground)] truncate">{block.subject}</p>
-                    <p className="text-[11px] text-[var(--muted)]">{plan.name} - {pad(block.hour)}:00 - {block.duration}h</p>
+                    <p className="text-[11px] text-[var(--muted)]">{plan.name} - {formatBlockTime(block)} - {formatDuration(block)}</p>
                   </div>
                   <button onClick={() => { setEditingPlan(plan); setShowModal(true); }}
                     className="px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-[11px] font-semibold text-[var(--foreground)] hover:border-[var(--primary)]/40 transition-all">
