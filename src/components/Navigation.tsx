@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Sparkles, GraduationCap, Calendar,
   BookOpen, Search, MessageSquare, Newspaper, Trophy,
   Moon, Sun, Coffee, LogOut, ChevronLeft, ChevronRight,
-  Menu, Activity, X, Loader2, Zap
+  Menu, Activity, X, Loader2, Zap, Settings, CreditCard
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,6 +23,8 @@ const navItems = [
   { id: 'chat',        label: 'Chat',         icon: MessageSquare,   href: '/chat' },
   { id: 'news',        label: 'News',         icon: Newspaper,       href: '/news' },
   { id: 'leaderboard', label: 'Leaderboard',  icon: Trophy,          href: '/leaderboard' },
+  { id: 'billing',     label: 'Billing',      icon: CreditCard,      href: '/billing' },
+  { id: 'settings',    label: 'Settings',     icon: Settings,        href: '/settings' },
 ] as const;
 
 const STORAGE_KEY = 'orbit-sidebar-collapsed';

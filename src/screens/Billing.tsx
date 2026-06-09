@@ -1,0 +1,152 @@
+'use client';
+import React from 'react';
+import { Check, CreditCard, Loader2, LockKeyhole, Sparkles } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { BillingPlan, getBillingPlans, getBillingStatus, startBillingCheckout } from '../services/billing';
+
+const formatNaira = (kobo: number) =>
+  new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(kobo / 100);
+
+const intervalLabel: Record<string, string> = {
+  two_weeks: 'for 2 weeks',
+  monthly: 'per month',
+  yearly: 'per year',
+  custom: 'coming soon',
+};
+
+export const Billing = () => {
+  const [plans, setPlans] = React.useState<BillingPlan[]>([]);
+  const [status, setStatus] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [busyPlan, setBusyPlan] = React.useState<string | null>(null);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    Promise.all([getBillingPlans(), getBillingStatus()])
+      .then(([nextPlans, nextStatus]) => {
+        setPlans(nextPlans);
+        setStatus(nextStatus);
+      })
+      .catch((err) => setError(err?.response?.data?.error || 'Billing could not load right now.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const checkout = async (plan: BillingPlan) => {
+    if (plan.is_custom || !plan.active) return;
+    setBusyPlan(plan.slug);
+    setError('');
+    try {
+      const callbackUrl = `${window.location.origin}/billing?payment=return`;
+      const result = await startBillingCheckout(plan.slug, callbackUrl);
+      window.location.href = result.authorizationUrl;
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Paystack checkout could not start.');
+      setBusyPlan(null);
+    }
+  };
+
+  const activePlanId = status?.subscription?.plan_id;
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+      <div className="mx-auto max-w-6xl p-6 space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pt-2">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-black text-[var(--muted)]">
+              <CreditCard className="h-3.5 w-3.5" />
+              Paystack billing
+            </div>
+            <h1 className="mt-4 text-3xl font-black tracking-tight">Flexible Plans for Every Stage</h1>
+            <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+              Monthly, yearly, and focused sprint access for Orbit AI usage. Payments are verified on the backend before features activate.
+            </p>
+          </div>
+          {status?.subscription && (
+            <div className="glass-panel rounded-[24px] px-4 py-3 text-sm">
+              <p className="text-[11px] font-black uppercase tracking-wider text-[var(--muted)]">Current plan</p>
+              <p className="mt-1 font-black">{status.subscription.plan?.name || 'Active subscription'}</p>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="rounded-[20px] border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="glass-panel rounded-[28px] p-10 flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-[var(--muted)]" />
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {plans.map((plan) => {
+              const featured = plan.slug === 'monthly';
+              const current = activePlanId === plan.id;
+              return (
+                <article
+                  key={plan.slug}
+                  className={cn(
+                    'glass-panel rounded-[28px] p-5 min-h-[360px] flex flex-col transition-all',
+                    featured && 'border-blue-400/45 bg-blue-500/10 shadow-[0_24px_80px_rgba(77,163,255,0.18)]',
+                    !plan.active && 'opacity-70'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-black">{plan.name}</p>
+                      <p className="mt-1 text-xs text-[var(--muted)]">{plan.description}</p>
+                    </div>
+                    {featured && (
+                      <span className="rounded-full border border-blue-300/30 bg-blue-400/15 px-2.5 py-1 text-[10px] font-black text-blue-200">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-8">
+                    <p className="text-3xl font-black">{plan.is_custom ? 'Custom' : formatNaira(plan.amount)}</p>
+                    <p className="mt-1 text-xs font-bold text-[var(--muted)]">{intervalLabel[plan.interval]}</p>
+                  </div>
+
+                  <button
+                    onClick={() => checkout(plan)}
+                    disabled={plan.is_custom || !plan.active || busyPlan === plan.slug || current}
+                    className={cn(
+                      'mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-black transition-all active:scale-[0.98]',
+                      current
+                        ? 'bg-emerald-400/15 text-emerald-200 border border-emerald-300/25'
+                        : featured
+                          ? 'bg-white text-black hover:bg-white/90'
+                          : 'bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90',
+                      (plan.is_custom || !plan.active) && 'cursor-not-allowed opacity-60'
+                    )}
+                  >
+                    {busyPlan === plan.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : current ? <Check className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
+                    {current ? 'Active plan' : plan.is_custom ? 'Coming soon' : 'Upgrade with Paystack'}
+                  </button>
+
+                  <div className="mt-6 space-y-3 text-xs font-bold text-[var(--muted)]">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-[var(--foreground)]" />
+                      {plan.ai_token_limit ? `${plan.ai_token_limit.toLocaleString()} AI tokens included` : 'Custom AI allowance'}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-[var(--foreground)]" />
+                      Research, planner, chat, and study tools access
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-[var(--foreground)]" />
+                      Backend verified subscription status
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

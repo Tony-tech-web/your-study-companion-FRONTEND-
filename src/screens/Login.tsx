@@ -1,10 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, Zap, ArrowRight } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { AnimatePresence, motion } from 'motion/react';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
@@ -15,13 +14,15 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const Field = ({ label, type, value, onChange, placeholder, icon: Icon, right }: any) => (
+const Field = ({ label, icon: Icon, right, ...props }: any) => (
   <div className="space-y-1.5">
-    <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[0.08em]">{label}</label>
+    <label className="text-[11px] font-black text-[var(--muted)] uppercase tracking-[0.08em]">{label}</label>
     <div className="relative">
       <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-      <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full bg-[var(--input)] border border-[var(--border)] rounded-full pl-10 pr-10 py-3 text-[14px] text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-[var(--primary)]/30 transition-all" />
+      <input
+        {...props}
+        className="w-full bg-[var(--input)] border border-[var(--border)] rounded-full pl-10 pr-10 py-3 text-[14px] font-semibold text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-[var(--primary)]/30 transition-all"
+      />
       {right && <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{right}</div>}
     </div>
   </div>
@@ -36,56 +37,75 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showConfirmBanner, setShowConfirmBanner] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [matricNumber, setMatricNumber] = useState('');
 
+  const switchMode = (next: 'login' | 'signup') => {
+    setMode(next);
+    setError('');
+    setConfirmEmail('');
+  };
+
   const handleSubmit = async () => {
-    if (!email || !password) { setError('Please fill in all fields'); return; }
-    setLoading(true); setError('');
+    if (!email.trim() || !password) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setConfirmEmail('');
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          if (error.message?.toLowerCase().includes('invalid login') || error.message?.includes('Email not confirmed')) {
-            throw new Error('Invalid email or password. If you just signed up, please check your email and confirm your account first.');
-          }
-          throw error;
-        }
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
         router.push('/dashboard');
       } else {
-        if (!fullName || !username) { setError('Please fill in all required fields'); setLoading(false); return; }
+        if (!fullName.trim() || !username.trim()) {
+          setError('Full name and username are required.');
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
-          email, password,
+          email: email.trim(),
+          password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: { full_name: fullName, username, matric_number: matricNumber },
-          }
+            data: {
+              full_name: fullName.trim(),
+              username: username.trim(),
+              matric_number: matricNumber.trim(),
+            },
+          },
         });
         if (error) throw error;
-        if (data.session) router.push('/');
-        else { 
-            setError(''); 
-            setMode('login');
-            // Show success state
-            setTimeout(() => setError('✅ Account created! Check your inbox and confirm your email before signing in.'), 100);
-          }
+        if (data.session) router.push('/dashboard');
+        else {
+          setConfirmEmail(email.trim());
+          setPassword('');
+          setMode('login');
+        }
       }
     } catch (e: any) {
-      setError(e.message || 'An error occurred');
-    } finally { setLoading(false); }
+      setError(e.message || 'Authentication failed. Check your details and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
-    setGoogleLoading(true); setError('');
+    setGoogleLoading(true);
+    setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/auth/callback` }
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-    } catch (e: any) { setError(e.message || 'Google sign-in failed'); setGoogleLoading(false); }
+    } catch (e: any) {
+      setError(e.message || 'Google sign-in failed.');
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -93,12 +113,9 @@ export const Login = () => {
       <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm glass-panel rounded-[28px] overflow-hidden">
-
-        {/* Top accent */}
         <div className="h-px w-full bg-[var(--glass-highlight)]" />
 
         <div className="px-8 py-8">
-          {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
               <Zap className="w-4 h-4 text-[var(--primary-foreground)]" />
@@ -106,71 +123,54 @@ export const Login = () => {
             <span className="text-[15px] font-black text-[var(--foreground)] tracking-tight">Orbit</span>
           </div>
 
-          {/* Title */}
           <div className="mb-6">
             <h1 className="text-[22px] font-black text-[var(--foreground)] tracking-tight">
               {mode === 'login' ? 'Sign in' : 'Create account'}
             </h1>
             <p className="text-[13px] text-[var(--muted)] mt-0.5">
-              {mode === 'login' ? (
-                <>New user?{' '}
-                  <button onClick={() => { setMode('signup'); setError(''); }} className="font-bold text-[var(--foreground)] hover:opacity-75 transition-colors">
-                    Create an account
-                  </button>
-                </>
-              ) : (
-                <>Already have an account?{' '}
-                  <button onClick={() => { setMode('login'); setError(''); }} className="font-bold text-[var(--foreground)] hover:opacity-75 transition-colors">
-                    Sign in
-                  </button>
-                </>
-              )}
+              {mode === 'login' ? 'New user?' : 'Already have an account?'}{' '}
+              <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')} className="font-black text-[var(--foreground)] hover:opacity-75 transition-colors">
+                {mode === 'login' ? 'Create an account' : 'Sign in'}
+              </button>
             </p>
           </div>
 
-          {/* Error */}
           <AnimatePresence>
-            {showConfirmBanner && (
-        <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-          <p className="text-sm font-semibold text-emerald-400 mb-1">✅ Account created!</p>
-          <p className="text-xs text-emerald-400/80 leading-relaxed">
-            We sent a confirmation link to <strong>{email}</strong>. 
-            Click it to verify your account, then come back to sign in.
-          </p>
-          <button onClick={() => { setShowConfirmBanner(false); setMode('login'); }}
-            className="mt-3 text-xs font-semibold text-emerald-400 underline">
-            Go to Sign In →
-          </button>
-        </div>
-      )}
-      {error && (
+            {confirmEmail && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden mb-4">
-                <div className="flex items-start gap-2.5 p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl">
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                  <p className="text-sm font-black text-emerald-400 mb-1">Account created</p>
+                  <p className="text-xs text-emerald-400/80 leading-relaxed">
+                    We sent a confirmation link to <strong>{confirmEmail}</strong>. Confirm it, then sign in.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            {error && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mb-4">
+                <div className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <p className="text-[13px] text-red-600 dark:text-red-400">{error}</p>
+                  <p className="text-[13px] text-red-400">{error}</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Fields */}
           <div className="space-y-3" onKeyDown={e => e.key === 'Enter' && handleSubmit()}>
-            <AnimatePresence>
-              {mode === 'signup' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
-                  <Field label="Full Name *" type="text" value={fullName} onChange={(e: any) => setFullName(e.target.value)} placeholder="Your full name" icon={({ className }: any) => <span className={cn("text-zinc-400", className)}>✦</span>} />
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <Field label="Username *" type="text" value={username} onChange={(e: any) => setUsername(e.target.value)} placeholder="username" icon={({ className }: any) => <span className={cn("text-zinc-400 text-sm", className)}>@</span>} />
-                    <Field label="Matric No." type="text" value={matricNumber} onChange={(e: any) => setMatricNumber(e.target.value)} placeholder="EUI/..." icon={({ className }: any) => <span className={cn("text-zinc-400 text-xs font-bold", className)}>#</span>} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {mode === 'signup' && (
+              <div className="space-y-3 overflow-hidden">
+                <Field label="Full Name *" type="text" value={fullName} onChange={(e: any) => setFullName(e.target.value)} placeholder="Your full name" icon={({ className }: any) => <span className={`${className} text-[10px] font-black`}>ID</span>} />
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Field label="Username *" type="text" value={username} onChange={(e: any) => setUsername(e.target.value)} placeholder="username" icon={({ className }: any) => <span className={`${className} text-sm font-black`}>@</span>} />
+                  <Field label="Matric No." type="text" value={matricNumber} onChange={(e: any) => setMatricNumber(e.target.value)} placeholder="EUI/..." icon={({ className }: any) => <span className={`${className} text-xs font-black`}>#</span>} />
+                </div>
+              </div>
+            )}
 
             <Field label="Email Address" type="email" value={email} onChange={(e: any) => setEmail(e.target.value)}
               placeholder="you@elizadeuniversity.edu.ng" icon={Mail} />
-
             <Field label="Password" type={showPw ? 'text' : 'password'} value={password}
               onChange={(e: any) => setPassword(e.target.value)} placeholder="Min. 6 characters" icon={Lock}
               right={
@@ -186,25 +186,22 @@ export const Login = () => {
               </div>
             )}
 
-            {/* Submit */}
             <button onClick={handleSubmit} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-bold text-[var(--primary-foreground)] disabled:opacity-50 btn-spring shadow-[var(--shadow-soft)] bg-[var(--primary)] hover:opacity-90">
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black text-[var(--primary-foreground)] disabled:opacity-50 btn-spring shadow-[var(--shadow-soft)] bg-[var(--primary)] hover:opacity-90">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
 
-            {/* Divider */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 h-px bg-[var(--border)]" />
               <span className="text-[11px] font-medium text-[var(--muted)]">or</span>
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
 
-            {/* Social buttons row (right-side reference style) */}
+            <p className="text-center text-[10px] font-semibold text-[var(--muted)]">Join With Your Favorite Social Media Account</p>
             <div className="flex items-center justify-center gap-3">
               <button onClick={handleGoogle} disabled={googleLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full border border-[var(--border)] bg-[var(--input)] text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl">
+                className="w-9 h-9 rounded-full border border-[var(--border)] bg-[var(--input)] text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl flex items-center justify-center">
                 {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
-                <span>Google</span>
               </button>
             </div>
 
