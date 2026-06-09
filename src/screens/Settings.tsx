@@ -20,7 +20,7 @@ const themeOptions = [
 ] as const;
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="glass-panel rounded-2xl p-4 space-y-3">
+  <section className="glass-panel rounded-[22px] p-3.5 space-y-3">
     <h2 className="text-[12px] font-black uppercase tracking-[0.18em] text-[var(--muted)]">{title}</h2>
     {children}
   </section>
@@ -32,16 +32,47 @@ export const Settings = () => {
   const router = useRouter();
   const [usage, setUsage] = React.useState<any>(null);
   const [usageLoading, setUsageLoading] = React.useState(true);
+  const [usageError, setUsageError] = React.useState('');
   const [resetMessage, setResetMessage] = React.useState('');
   const [securityBusy, setSecurityBusy] = React.useState(false);
   const displayName = (user?.user_metadata?.full_name as string) || user?.email?.split('@')[0] || 'Student';
 
-  React.useEffect(() => {
-    getBillingUsage()
-      .then(setUsage)
-      .catch(() => setUsage(null))
-      .finally(() => setUsageLoading(false));
+  const loadUsage = React.useCallback(() => {
+    let alive = true;
+    setUsageLoading(true);
+    setUsageError('');
+
+    const usageTimeout = new Promise<{ timedOut: true }>((resolve) => {
+      window.setTimeout(() => resolve({ timedOut: true }), 8000);
+    });
+
+    Promise.race([getBillingUsage(), usageTimeout])
+      .then((next: any) => {
+        if (!alive) return;
+        if (next?.timedOut) {
+          setUsage(null);
+          setUsageError('Usage is taking longer than expected. Check the backend billing usage endpoint.');
+          return;
+        }
+        setUsage(next);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setUsage(null);
+        setUsageError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Usage could not load right now.');
+      })
+      .finally(() => {
+        if (alive) setUsageLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  React.useEffect(() => {
+    return loadUsage();
+  }, [loadUsage]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -89,7 +120,7 @@ export const Settings = () => {
           <p className="text-xs text-[var(--muted)] mt-1">Profile, billing, security, usage, and theme controls.</p>
         </div>
 
-        <div className="glass-panel rounded-2xl p-4 flex items-center gap-3">
+        <div className="glass-panel rounded-[22px] p-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xs font-black">
             {displayName.slice(0, 2).toUpperCase()}
           </div>
@@ -125,11 +156,13 @@ export const Settings = () => {
           </div>
         </Section>
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           <Section title="Profile">
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
-              <UserRound className="h-5 w-5 text-[var(--muted)]" />
-              <div className="min-w-0">
+            <div className="flex items-center gap-3 rounded-[20px] border border-[var(--border)] bg-[var(--input)] p-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)]">
+                <UserRound className="h-4 w-4 text-[var(--muted)]" />
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-black truncate">{displayName}</p>
                 <p className="text-xs text-[var(--muted)] truncate">{user?.email}</p>
               </div>
@@ -137,13 +170,13 @@ export const Settings = () => {
           </Section>
 
           <Section title="Payment">
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
-              <div className="min-w-0">
+            <div className="flex items-center justify-between gap-4 rounded-[20px] border border-[var(--border)] bg-[var(--input)] p-3">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   <p className="text-sm font-black">Billing plans</p>
                 </div>
-                <p className="mt-1 text-xs text-[var(--muted)]">Paystack checkout with backend verification.</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">Review AI allowance, provider allocation, and margin before Paystack checkout.</p>
               </div>
               <Link href="/billing" className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-[var(--primary-foreground)]">
                 Manage
@@ -153,7 +186,19 @@ export const Settings = () => {
 
           <Section title="Usage">
             {usageLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-[var(--muted)]" />
+              <div className="flex min-h-20 items-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[var(--muted)]" />
+              </div>
+            ) : usageError ? (
+              <div className="rounded-[20px] border border-red-500/20 bg-red-500/10 p-3">
+                <p className="text-xs font-bold text-red-300">{usageError}</p>
+                <button
+                  onClick={loadUsage}
+                  className="mt-3 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-[var(--primary-foreground)]"
+                >
+                  Retry usage
+                </button>
+              </div>
             ) : (
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
@@ -189,7 +234,7 @@ export const Settings = () => {
                     {Object.entries(usage.usage.by_provider).map(([provider, item]: any) => (
                       <div key={provider} className="flex justify-between gap-3 py-1">
                         <span>{provider}</span>
-                        <span>{item.tokens.toLocaleString()} tokens · ${item.cost?.billable_cost_usd?.toFixed?.(4) ?? '0.0000'}</span>
+                        <span>{item.tokens.toLocaleString()} tokens - ${item.cost?.billable_cost_usd?.toFixed?.(4) ?? '0.0000'}</span>
                       </div>
                     ))}
                   </div>

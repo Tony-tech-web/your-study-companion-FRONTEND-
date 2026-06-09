@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Check, CreditCard, Loader2, LockKeyhole, Sparkles } from 'lucide-react';
+import { Check, CreditCard, Loader2, LockKeyhole, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { BillingPlan, getBillingPlans, getBillingStatus, startBillingCheckout } from '../services/billing';
 
@@ -14,12 +14,35 @@ const intervalLabel: Record<string, string> = {
   custom: 'coming soon',
 };
 
+const checkoutError = (err: any) =>
+  err?.response?.data?.error ||
+  err?.response?.data?.message ||
+  err?.message ||
+  'Paystack checkout could not start.';
+
+const getBreakdown = (plan: BillingPlan) => {
+  const limits = (plan.provider_limits || {}) as any;
+  const marginRate = Number(limits.owner_margin_rate || 0.15);
+  const base = Math.round(plan.amount / (1 + marginRate));
+  const margin = Math.max(0, plan.amount - base);
+  return {
+    limits,
+    providers: limits.providers || {},
+    estimate: limits.estimate,
+    marginRate,
+    base,
+    margin,
+    total: plan.amount,
+  };
+};
+
 export const Billing = () => {
   const [plans, setPlans] = React.useState<BillingPlan[]>([]);
   const [status, setStatus] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [busyPlan, setBusyPlan] = React.useState<string | null>(null);
   const [error, setError] = React.useState('');
+  const [selectedPlan, setSelectedPlan] = React.useState<BillingPlan | null>(null);
 
   React.useEffect(() => {
     Promise.all([getBillingPlans(), getBillingStatus()])
@@ -40,8 +63,9 @@ export const Billing = () => {
       const result = await startBillingCheckout(plan.slug, callbackUrl);
       window.location.href = result.authorizationUrl;
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Paystack checkout could not start.');
+      setError(checkoutError(err));
       setBusyPlan(null);
+      setSelectedPlan(null);
     }
   };
 
@@ -49,6 +73,79 @@ export const Billing = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+      {selectedPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xl">
+          <div className="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--muted)]">Review plan</p>
+                <h2 className="mt-1 text-2xl font-black">{selectedPlan.name}</h2>
+                <p className="mt-1 text-sm text-[var(--muted)]">{selectedPlan.description}</p>
+              </div>
+              <button onClick={() => setSelectedPlan(null)} className="rounded-full border border-[var(--border)] bg-[var(--input)] p-2 text-[var(--muted)]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {(() => {
+              const breakdown = getBreakdown(selectedPlan);
+              return (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-3xl border border-[var(--border)] bg-[var(--input)] p-4">
+                    {[
+                      ['Plan access', formatNaira(breakdown.base)],
+                      [`Owner margin (${Math.round(breakdown.marginRate * 100)}%)`, formatNaira(breakdown.margin)],
+                      ['Due today', formatNaira(breakdown.total)],
+                    ].map(([label, value], index) => (
+                      <div key={label} className={cn('flex items-center justify-between py-2 text-sm', index === 2 && 'border-t border-[var(--border)] pt-3 text-base font-black')}>
+                        <span className={index === 2 ? 'text-[var(--foreground)]' : 'text-[var(--muted)]'}>{label}</span>
+                        <span className="font-black">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">AI tokens</p>
+                      <p className="mt-1 text-lg font-black">{selectedPlan.ai_token_limit?.toLocaleString?.() || 'Custom'}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">Provider cost</p>
+                      <p className="mt-1 text-lg font-black">${breakdown.estimate?.provider_cost_usd ?? '0.00'}</p>
+                    </div>
+                  </div>
+
+                  {Object.keys(breakdown.providers).length > 0 && (
+                    <div className="rounded-3xl border border-[var(--border)] bg-[var(--input)] p-4">
+                      <p className="mb-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Provider allocation</p>
+                      {Object.entries(breakdown.providers).map(([provider, config]: any) => (
+                        <div key={provider} className="flex items-center justify-between py-1.5 text-xs">
+                          <span className="capitalize text-[var(--muted)]">{provider}</span>
+                          <span className="font-black">{Number(config.tokens || 0).toLocaleString()} tokens</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300">
+                    <ShieldCheck className="h-4 w-4" />
+                    Payment is verified by the backend before subscription access is activated.
+                  </div>
+
+                  <button
+                    onClick={() => checkout(selectedPlan)}
+                    disabled={busyPlan === selectedPlan.slug}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-black text-black transition active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {busyPlan === selectedPlan.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                    Continue to Paystack
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-6xl p-6 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pt-2">
           <div>
@@ -84,9 +181,7 @@ export const Billing = () => {
             {plans.map((plan) => {
               const featured = plan.slug === 'monthly';
               const current = activePlanId === plan.id;
-              const limits = (plan.provider_limits || {}) as any;
-              const estimate = limits.estimate;
-              const providers = limits.providers || {};
+              const { limits, estimate, providers } = getBreakdown(plan);
               return (
                 <article
                   key={plan.slug}
@@ -114,7 +209,7 @@ export const Billing = () => {
                   </div>
 
                   <button
-                    onClick={() => checkout(plan)}
+                    onClick={() => setSelectedPlan(plan)}
                     disabled={plan.is_custom || !plan.active || busyPlan === plan.slug || current}
                     className={cn(
                       'mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-black transition-all active:scale-[0.98]',
