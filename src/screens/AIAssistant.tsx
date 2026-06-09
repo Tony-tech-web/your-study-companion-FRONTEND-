@@ -402,6 +402,13 @@ const StudyToolsPanel = ({ extractedPdfs, onClose }: { extractedPdfs: ExtractedP
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');
       const data = await res.json();
       setResult(data.content);
+      await recordAiUsageEvent({
+        provider: 'edge:study-tools',
+        feature: `study_tools_${tool}`,
+        prompt: { tool, pdfChars: content.length },
+        completion: data.content,
+        metadata: { model: 'gemini-2.5-flash-lite' },
+      }).catch(() => {});
       await updateXP(tool === 'quiz' ? 'quiz' : 'flashcard');
     } catch (e: any) { setError(friendlyAIError(e)); }
     finally { setGenerating(false); }

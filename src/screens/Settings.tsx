@@ -20,8 +20,8 @@ const themeOptions = [
 ] as const;
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="glass-panel rounded-[28px] p-5 space-y-4">
-    <h2 className="text-sm font-black">{title}</h2>
+  <section className="glass-panel rounded-2xl p-4 space-y-3">
+    <h2 className="text-[12px] font-black uppercase tracking-[0.18em] text-[var(--muted)]">{title}</h2>
     {children}
   </section>
 );
@@ -82,22 +82,22 @@ export const Settings = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-5xl mx-auto p-6 space-y-5">
-        <div className="pt-2">
+      <div className="max-w-4xl mx-auto p-4 sm:p-5 space-y-4 pb-28 lg:pb-6">
+        <div className="pt-1">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">Orbit</p>
-          <h1 className="text-2xl font-black tracking-tight mt-1">Settings</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Profile, billing, security, usage, and theme controls.</p>
+          <h1 className="text-xl font-black tracking-tight mt-1">Settings</h1>
+          <p className="text-xs text-[var(--muted)] mt-1">Profile, billing, security, usage, and theme controls.</p>
         </div>
 
-        <div className="glass-panel rounded-[28px] p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-black">
+        <div className="glass-panel rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xs font-black">
             {displayName.slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black truncate">{displayName}</p>
             <p className="text-xs text-[var(--muted)] truncate mt-0.5">{user?.email}</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-emerald-400 text-xs font-bold rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5">
+          <div className="hidden sm:flex items-center gap-2 text-emerald-400 text-[11px] font-bold rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
             Authenticated
           </div>
@@ -109,10 +109,10 @@ export const Settings = () => {
               const active = theme === value;
               return (
                 <button key={value} onClick={() => setTheme(value)}
-                  className={cn('glass-panel rounded-[24px] p-5 text-left transition-all active:scale-[0.98]',
+                  className={cn('glass-panel rounded-2xl p-3 text-left transition-all active:scale-[0.98]',
                     active ? 'border-[var(--primary)] shadow-[var(--shadow-soft)]' : 'hover:border-[var(--primary)]/35')}>
-                  <div className="flex items-center justify-between gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-[var(--input)] border border-[var(--border)] flex items-center justify-center">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--input)] border border-[var(--border)] flex items-center justify-center">
                       <Icon className="w-4 h-4 text-[var(--foreground)]" />
                     </div>
                     <div className={cn('w-8 h-2 rounded-full', active ? 'bg-[var(--primary)]' : 'bg-[var(--border)]')} />
@@ -127,7 +127,7 @@ export const Settings = () => {
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Section title="Profile">
-            <div className="flex items-center gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--input)] p-4">
+            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
               <UserRound className="h-5 w-5 text-[var(--muted)]" />
               <div className="min-w-0">
                 <p className="text-sm font-black truncate">{displayName}</p>
@@ -137,7 +137,7 @@ export const Settings = () => {
           </Section>
 
           <Section title="Payment">
-            <div className="flex items-center justify-between gap-4 rounded-[22px] border border-[var(--border)] bg-[var(--input)] p-4">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -172,12 +172,24 @@ export const Settings = () => {
                   <span className="font-black">AI interactions</span>
                   <span className="text-[var(--muted)]">{usage?.total_ai_interactions ?? 0}</span>
                 </div>
+                {usage?.usage?.cost && (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-black">Provider cost</span>
+                      <span className="text-[var(--muted)]">${usage.usage.cost.provider_cost_usd?.toFixed?.(4) ?? usage.usage.cost.provider_cost_usd}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-black">Owner margin</span>
+                      <span className="text-[var(--muted)]">${usage.usage.cost.margin_usd?.toFixed?.(4) ?? usage.usage.cost.margin_usd}</span>
+                    </div>
+                  </>
+                )}
                 {usage?.usage?.by_provider && Object.keys(usage.usage.by_provider).length > 0 && (
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 text-xs text-[var(--muted)]">
                     {Object.entries(usage.usage.by_provider).map(([provider, item]: any) => (
                       <div key={provider} className="flex justify-between gap-3 py-1">
                         <span>{provider}</span>
-                        <span>{item.tokens.toLocaleString()} tokens</span>
+                        <span>{item.tokens.toLocaleString()} tokens · ${item.cost?.billable_cost_usd?.toFixed?.(4) ?? '0.0000'}</span>
                       </div>
                     ))}
                   </div>
@@ -187,7 +199,7 @@ export const Settings = () => {
           </Section>
 
           <Section title="Email Confirmation">
-            <div className="flex items-center justify-between gap-4 rounded-[22px] border border-[var(--border)] bg-[var(--input)] p-4">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
               <div className="flex items-center gap-3">
                 <MailCheck className="h-5 w-5 text-emerald-300" />
                 <div>
@@ -201,16 +213,16 @@ export const Settings = () => {
           <Section title="Security">
             <div className="space-y-3">
               <button onClick={requestPasswordReset}
-                className="flex w-full items-center justify-between rounded-[22px] border border-[var(--border)] bg-[var(--input)] p-4 text-left transition-all hover:border-[var(--primary)]/35">
+                className="flex w-full items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 text-left transition-all hover:border-[var(--primary)]/35">
                 <span className="flex items-center gap-3 text-sm font-black"><KeyRound className="h-5 w-5" /> Reset password</span>
               </button>
               <button disabled={securityBusy} onClick={handleDeactivate}
-                className="flex w-full items-center justify-between rounded-[22px] border border-orange-500/20 bg-orange-500/5 p-4 text-left transition hover:bg-orange-500/10 disabled:opacity-60">
+                className="flex w-full items-center justify-between rounded-2xl border border-orange-500/20 bg-orange-500/5 p-3 text-left transition hover:bg-orange-500/10 disabled:opacity-60">
                 <span className="flex items-center gap-3 text-sm font-black text-orange-200"><Trash2 className="h-5 w-5" /> Deactivate account</span>
                 <span className="text-xs text-[var(--muted)]">Pause profile</span>
               </button>
               <button disabled={securityBusy} onClick={handleDelete}
-                className="flex w-full items-center justify-between rounded-[22px] border border-red-500/20 bg-red-500/5 p-4 text-left transition hover:bg-red-500/10 disabled:opacity-60">
+                className="flex w-full items-center justify-between rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-left transition hover:bg-red-500/10 disabled:opacity-60">
                 <span className="flex items-center gap-3 text-sm font-black text-red-300"><Trash2 className="h-5 w-5" /> Delete account</span>
                 <span className="text-xs text-[var(--muted)]">Permanent</span>
               </button>

@@ -6,6 +6,7 @@ import { useDialog } from '../components/Dialog';
 import { cn } from '../lib/utils';
 import { searchResearch, getResearchHistory, deleteResearchEntry, saveResearchEntry, SearchResult, ResearchSearchResult } from '../services/research';
 import { updateXP } from '../lib/supabase';
+import { recordAiUsageEvent } from '../services/billing';
 
 interface HistoryItem { id: string; title: string; abstract: string; year: number; }
 
@@ -50,6 +51,16 @@ export const Research = () => {
     try {
       const data = await searchResearch(query.trim(), filterMode);
       setSearchData(data);
+      await recordAiUsageEvent({
+        provider: 'edge:research-search',
+        feature: `research_${filterMode}`,
+        prompt: { query: query.trim(), filterMode },
+        completion: data,
+        metadata: {
+          model: 'gemini-2.5-flash-lite',
+          serper_queries: filterMode === 'academic' ? 3 : 2,
+        },
+      }).catch(() => {});
       await updateXP('research');
       loadHistory();
     } catch (err: any) {

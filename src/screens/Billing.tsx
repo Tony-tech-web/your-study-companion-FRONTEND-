@@ -84,6 +84,9 @@ export const Billing = () => {
             {plans.map((plan) => {
               const featured = plan.slug === 'monthly';
               const current = activePlanId === plan.id;
+              const limits = (plan.provider_limits || {}) as any;
+              const estimate = limits.estimate;
+              const providers = limits.providers || {};
               return (
                 <article
                   key={plan.slug}
@@ -132,6 +135,28 @@ export const Billing = () => {
                       <Sparkles className="h-4 w-4 text-[var(--foreground)]" />
                       {plan.ai_token_limit ? `${plan.ai_token_limit.toLocaleString()} AI tokens included` : 'Custom AI allowance'}
                     </div>
+                    {estimate && (
+                      <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 space-y-1">
+                        <div className="flex justify-between gap-3">
+                          <span>Provider cost</span>
+                          <span>${estimate.provider_cost_usd}</span>
+                        </div>
+                        <div className="flex justify-between gap-3 text-[var(--foreground)]">
+                          <span>Owner margin</span>
+                          <span>{Math.round((limits.owner_margin_rate || 0.15) * 100)}%</span>
+                        </div>
+                      </div>
+                    )}
+                    {Object.keys(providers).length > 0 && (
+                      <div className="space-y-1">
+                        {Object.entries(providers).map(([provider, config]: any) => (
+                          <div key={provider} className="flex justify-between gap-3">
+                            <span className="capitalize">{provider}</span>
+                            <span>{Number(config.tokens || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-[var(--foreground)]" />
                       Research, planner, chat, and study tools access
