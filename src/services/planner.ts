@@ -82,3 +82,16 @@ export const updateStudyPlan = async (id: string, data: Partial<StudyPlan>): Pro
 export const deleteStudyPlan = async (id: string): Promise<void> => {
   await api.delete(`/api/study-plans/${id}`);
 };
+
+export const randomizeStudyPlan = async (data: {
+  subjects: string[];
+  totalHours: number;
+  daysPerWeek?: number;
+}): Promise<{ blocks: StudyPlanBlock[]; summary: string; detectedItems: Array<{ subject: string; mode: string; duration: number }> }> => {
+  const response = await api.post('/api/study-plans/randomize', {
+    subjects: data.subjects,
+    total_hours: data.totalHours,
+    days_per_week: data.daysPerWeek || 5,
+  });
+  return response.data;
+};

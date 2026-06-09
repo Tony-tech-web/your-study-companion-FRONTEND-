@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Bookmark, Clock, Tag } from 'lucide-react';
-import { getNews } from '../services/news';
+import { getNews, subscribeToNews } from '../services/news';
 import { NewsItem } from '../types';
 import { ListSkeleton } from '../components/Skeleton';
 
@@ -17,6 +17,10 @@ export const News = () => {
 
   useEffect(() => {
     getNews().then(setNews).catch(console.error).finally(() => setLoading(false));
+    const unsubscribe = subscribeToNews(article => {
+      setNews(prev => prev.some(item => item.id === article.id) ? prev : [article, ...prev]);
+    });
+    return unsubscribe;
   }, []);
 
   const filtered = activeCategory === 'All'

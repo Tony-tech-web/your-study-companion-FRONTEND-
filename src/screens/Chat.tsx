@@ -6,6 +6,7 @@ import { Send, Search, MessageSquare, Loader2 } from 'lucide-react';
 import { getChatMessages, sendChatMessage, ChatMessage } from '../services/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { ListSkeleton } from '../components/Skeleton';
+import { supabase } from '../lib/supabase';
 
 export const Chat = () => {
   const { user } = useAuth();
@@ -17,6 +18,33 @@ export const Chat = () => {
 
   useEffect(() => { fetchMessages(); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    if (!user?.id) return;
+    const isVisibleToUser = (message: ChatMessage) =>
+      !message.receiver_id || message.sender_id === user.id || message.receiver_id === user.id;
+
+    const channel = supabase
+      .channel('orbit-chat-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, payload => {
+        const next = payload.new as ChatMessage | null;
+        const old = payload.old as Partial<ChatMessage> | null;
+        if (payload.eventType === 'DELETE' && old?.id) {
+          setMessages(prev => prev.filter(item => item.id !== old.id));
+          return;
+        }
+        if (!next || !isVisibleToUser(next)) return;
+        setMessages(prev => {
+          const exists = prev.some(item => item.id === next.id);
+          const merged = exists ? prev.map(item => item.id === next.id ? next : item) : [...prev, next];
+          return merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const fetchMessages = async () => {
     try { const data = await getChatMessages(); setMessages(data); }
@@ -31,7 +59,7 @@ export const Chat = () => {
     setSending(true);
     try {
       const newMsg = await sendChatMessage(content);
-      setMessages(prev => [...prev, newMsg]);
+      setMessages(prev => prev.some(msg => msg.id === newMsg.id) ? prev : [...prev, newMsg]);
     } catch (err) { console.error(err); }
     finally { setSending(false); }
   };
@@ -58,8 +86,7 @@ export const Chat = () => {
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
           </div>
-          {/* Realtime chat coming soon notice */}
-          <p className="text-center text-[10px] text-[var(--muted)] opacity-30 mt-4 px-3">Realtime messaging coming soon</p>
+          <p className="text-center text-[10px] text-[var(--muted)] opacity-40 mt-4 px-3">Realtime channel active</p>
         </div>
       </div>
 

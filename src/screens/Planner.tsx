@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, ChevronLeft, ChevronRight,
   Brain, Clock, Sparkles, Edit3, Bell,
 } from 'lucide-react';
-import { getStudyPlans, createStudyPlan, updateStudyPlan, deleteStudyPlan } from '../services/planner';
+import { getStudyPlans, createStudyPlan, updateStudyPlan, deleteStudyPlan, randomizeStudyPlan } from '../services/planner';
 import { callEdgeFunction } from '../lib/supabase';
 import { StudyPlan, StudyPlanBlock } from '../types';
 
@@ -113,7 +113,17 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h. duration is hours. Use these colors: 
       setSchedule(parsed);
       setStep('schedule');
     } catch {
-      setSchedule({ blocks: [], summary: 'Could not generate AI schedule. You can still create the plan.' });
+      try {
+        const fallbackSubjects = subjectsInput.split(',').map(s => s.trim()).filter(Boolean);
+        const randomized = await randomizeStudyPlan({
+          subjects: fallbackSubjects,
+          totalHours: parseInt(hours) || fallbackSubjects.length,
+          daysPerWeek: parseInt(daysPerWeek) || 5,
+        });
+        setSchedule({ blocks: randomized.blocks, summary: randomized.summary });
+      } catch {
+        setSchedule({ blocks: [], summary: 'Could not generate a schedule. You can still save the plan and try again later.' });
+      }
       setStep('schedule');
     }
   };
@@ -552,6 +562,7 @@ export const Planner = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<StudyPlan | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const { show: showDialog } = useDialog();
 
   useEffect(() => {
@@ -579,6 +590,16 @@ export const Planner = () => {
 
   const totalHours = plans.reduce((a, p) => a + p.totalHours, 0);
   const avgProgress = plans.length ? Math.round(plans.reduce((a, p) => a + p.progress, 0) / plans.length) : 0;
+  const dateStrip = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() + index);
+    return date;
+  });
+  const selectedSessions = plans.flatMap(plan =>
+    (plan.scheduleBlocks || [])
+      .filter(block => block.day === selectedDate.getDay())
+      .map(block => ({ plan, block }))
+  );
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
@@ -617,6 +638,62 @@ export const Planner = () => {
             ))}
           </div>
         )}
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)]">Calendar Actions</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <button onClick={() => { setEditingPlan(null); setShowModal(true); }}
+              className="px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--input)] text-[12px] font-semibold text-[var(--foreground)] hover:border-[var(--primary)]/40 transition-all">
+              Add Plan
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {dateStrip.map(date => {
+              const active = date.toDateString() === selectedDate.toDateString();
+              const count = plans.reduce((total, plan) => total + (plan.scheduleBlocks || []).filter(block => block.day === date.getDay()).length, 0);
+              return (
+                <button key={date.toISOString()} onClick={() => setSelectedDate(date)}
+                  className={cn('min-h-[58px] rounded-xl border px-2 py-2 text-center transition-all',
+                    active ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-lg' : 'bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)]/40')}>
+                  <span className="block text-[10px] font-bold uppercase opacity-70">{getDayLabel(date.getDay())}</span>
+                  <span className="block text-base font-black">{date.getDate()}</span>
+                  <span className={cn('mx-auto mt-1 block h-1.5 w-1.5 rounded-full', count ? 'bg-current' : 'bg-transparent')} />
+                </button>
+              );
+            })}
+          </div>
+          {selectedSessions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--input)] p-4 text-center">
+              <p className="text-sm font-semibold text-[var(--foreground)]">Nothing scheduled on this day</p>
+              <p className="text-[11px] text-[var(--muted)] mt-1">Create or edit a plan to place study blocks here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {selectedSessions.map(({ plan, block }) => (
+                <div key={`${plan.id}-${block.day}-${block.hour}-${block.subject}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--input)] px-3 py-2">
+                  <div className="h-9 w-1.5 rounded-full" style={{ backgroundColor: block.color || 'var(--primary)' }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-[var(--foreground)] truncate">{block.subject}</p>
+                    <p className="text-[11px] text-[var(--muted)]">{plan.name} - {pad(block.hour)}:00 - {block.duration}h</p>
+                  </div>
+                  <button onClick={() => { setEditingPlan(plan); setShowModal(true); }}
+                    className="px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-[11px] font-semibold text-[var(--foreground)] hover:border-[var(--primary)]/40 transition-all">
+                    Modify
+                  </button>
+                  <button onClick={() => handleDelete(plan.id)}
+                    className="px-2.5 py-1.5 rounded-lg border border-red-500/20 text-[11px] font-semibold text-red-500 hover:bg-red-500/10 transition-all">
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {plans.length === 0 ? (
           <div className="bg-[var(--card)] border-2 border-dashed border-[var(--border)] rounded-xl p-16 text-center">
