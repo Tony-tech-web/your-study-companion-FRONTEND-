@@ -48,7 +48,7 @@ export const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between pt-2">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Dashboard</h1>
+            <h1 className="font-display text-3xl font-black text-[var(--foreground)] tracking-tight">Dashboard</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">
               {stats.user.name !== 'Student' ? `Welcome back, ${stats.user.name.split(' ')[0]}` : 'Welcome back'}
             </p>
@@ -69,8 +69,8 @@ export const Dashboard = () => {
               transition={{ delay: i * 0.06, duration: 0.3 }}
               onClick={() => c.href && router.push(c.href)}
               className={cn(
-                'bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 transition-all duration-150',
-                c.href ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:shadow-sm' : ''
+                'premium-card rounded-[26px] p-4 transition-all duration-200',
+                c.href ? 'cursor-pointer hover:-translate-y-0.5 hover:border-[var(--primary)]/40' : ''
               )}
             >
               <div className="flex items-center justify-between mb-3">
@@ -88,7 +88,7 @@ export const Dashboard = () => {
         {/* Chart + XP ring */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Activity chart */}
-          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+          <div className="lg:col-span-2 premium-card rounded-[30px] p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-semibold text-[var(--foreground)]">AI-Assisted Activity</p>
               <span className="text-[11px] text-[var(--muted)]">Last 7 days</span>
@@ -111,7 +111,7 @@ export const Dashboard = () => {
           </div>
 
           {/* XP ring */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center gap-3">
+          <div className="premium-card rounded-[30px] p-5 flex flex-col items-center justify-center gap-3">
             <div className="relative w-28 h-28">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="38" stroke="var(--border)" strokeWidth="8" fill="none" />
@@ -147,7 +147,7 @@ export const Dashboard = () => {
         {/* Tasks + Quick actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Study plans */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+          <div className="premium-card rounded-[30px] p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-semibold text-[var(--foreground)]">Study Plans</p>
               <button onClick={() => router.push('/planner')} className="text-[11px] text-[var(--primary)] font-medium hover:opacity-80">View all</button>
@@ -197,23 +197,22 @@ export const Dashboard = () => {
                   transition={{ delay: 0.18 + i * 0.05, duration: 0.28 }}
                   onClick={() => router.push(a.href)}
                   className={cn(
-                    'group relative min-h-[154px] overflow-hidden rounded-[24px] border border-white/10 p-4 text-left shadow-[0_18px_50px_rgba(0,0,0,0.26)] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 active:scale-[0.99]',
+                    'group premium-card relative min-h-[154px] overflow-hidden rounded-[30px] p-3 text-left transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99]',
                     a.wide && 'col-span-2 min-h-[184px]'
                   )}
-                  style={{
-                    backgroundImage: `url(${a.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.54)_34%,rgba(0,0,0,0.14)_100%)]" />
+                  <div
+                    className="absolute inset-x-3 top-3 h-[58%] rounded-[24px] border border-[var(--border)] bg-cover bg-center shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+                    style={{ backgroundImage: `url(${a.image})` }}
+                  />
+                  <div className="absolute inset-x-3 top-3 h-[58%] rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.18))]" />
                   <div className="relative z-10 flex h-full min-h-[122px] flex-col justify-between">
-                    <span className="ml-auto inline-flex h-8 items-center rounded-full bg-white px-4 text-[11px] font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
+                    <span className="ml-auto inline-flex h-8 items-center rounded-full bg-[var(--primary)] px-4 text-[11px] font-black text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]">
                       Open
                     </span>
                     <div>
-                      <p className="max-w-[72%] truncate text-base font-black text-white">{a.label}</p>
-                      <p className="mt-1 max-w-[72%] truncate text-xs font-bold text-white/65">{a.sub}</p>
+                      <p className="max-w-[82%] truncate text-base font-black text-[var(--foreground)]">{a.label}</p>
+                      <p className="mt-1 max-w-[82%] truncate text-xs font-bold text-[var(--muted)]">{a.sub}</p>
                     </div>
                   </div>
                 </motion.button>

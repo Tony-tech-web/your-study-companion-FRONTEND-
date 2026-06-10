@@ -146,32 +146,32 @@ export const Sidebar = () => {
     <>
       {showStatus && <APIStatusModal onClose={() => setShowStatus(false)} />}
       <aside className={cn(
-        'hidden lg:flex flex-col h-screen shrink-0 border-r border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[30px] transition-[width] duration-200 ease-in-out overflow-hidden shadow-[var(--shadow-deep)]',
-        collapsed ? 'w-[60px]' : 'w-[220px]'
+        'hidden lg:flex flex-col my-4 ml-4 h-[calc(100dvh-2rem)] shrink-0 rounded-[32px] border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[30px] transition-[width] duration-200 ease-in-out overflow-hidden shadow-[var(--shadow-floating)]',
+        collapsed ? 'w-[72px]' : 'w-[248px]'
       )}>
         {/* Logo row */}
-        <div className={cn('flex items-center h-14 px-3 border-b border-[var(--border)] shrink-0', collapsed ? 'justify-center' : 'justify-between')}>
+        <div className={cn('flex items-center h-16 px-4 border-b border-[var(--border)] shrink-0', collapsed ? 'justify-center' : 'justify-between')}>
           {!collapsed && (
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded-xl bg-[var(--primary)] flex items-center justify-center shrink-0 shadow-[var(--shadow-soft)]">
+              <div className="w-9 h-9 rounded-2xl bg-[var(--primary)] flex items-center justify-center shrink-0 shadow-[var(--shadow-soft)]">
                 <Zap className="w-3.5 h-3.5 text-[var(--primary-foreground)]" />
               </div>
-              <span className="text-[13px] font-black tracking-tight text-[var(--foreground)] uppercase">Orbit</span>
+              <span className="text-[16px] font-black tracking-tight text-[var(--foreground)] uppercase">Orbit</span>
             </div>
           )}
-          <button onClick={toggle} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all">
+          <button onClick={toggle} className="w-8 h-8 rounded-full border border-[var(--border)] bg-[var(--input)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-all">
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 flex flex-col gap-0.5 p-2 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 flex flex-col gap-1.5 p-3 overflow-y-auto custom-scrollbar">
           {visibleNavItems.map(item => {
             const active = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
             return (
               <Link key={item.id} href={item.href} title={collapsed ? item.label : undefined}
-                className={cn('flex items-center gap-3 rounded-xl transition-all duration-150 group relative',
-                  collapsed ? 'h-9 w-9 mx-auto justify-center' : 'h-9 px-2.5',
+                className={cn('flex items-center gap-3 rounded-2xl transition-all duration-200 group relative premium-button',
+                  collapsed ? 'h-11 w-11 mx-auto justify-center' : 'h-11 px-3',
                   active
                     ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]')}>
@@ -188,7 +188,7 @@ export const Sidebar = () => {
         </nav>
 
         {/* Bottom */}
-        <div className="p-2 border-t border-[var(--border)] space-y-1 shrink-0">
+        <div className="p-3 border-t border-[var(--border)] space-y-2 shrink-0">
           {/* Theme */}
           <div className={cn('flex gap-1 rounded-full border border-[var(--border)] bg-[var(--input)] p-1', collapsed ? 'flex-col items-center' : '')}>
             {themeOptions.map(({ v, I }) => (
@@ -203,15 +203,15 @@ export const Sidebar = () => {
 
           {/* API Status */}
           <button onClick={() => setShowStatus(true)} title="API Status"
-            className={cn('flex items-center gap-2 rounded-xl h-8 transition-all text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]',
-              collapsed ? 'w-9 mx-auto justify-center' : 'w-full px-2.5')}>
+            className={cn('flex items-center gap-2 rounded-2xl h-10 transition-all text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]',
+              collapsed ? 'w-11 mx-auto justify-center' : 'w-full px-3')}>
             <Activity className="w-3.5 h-3.5 shrink-0" />
             {!collapsed && <span className="text-[11px] font-semibold">API Status</span>}
           </button>
 
           {/* User */}
-          <div className={cn('flex items-center gap-2 rounded-xl px-1.5 py-1.5', collapsed ? 'justify-center' : '')}>
-            <div className="w-6 h-6 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm">
+          <div className={cn('flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--input)] px-2 py-2', collapsed ? 'justify-center' : '')}>
+            <div className="w-8 h-8 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm">
               {initials}
             </div>
             {!collapsed && (

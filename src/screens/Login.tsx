@@ -21,7 +21,7 @@ const Field = ({ label, icon: Icon, right, ...props }: any) => (
       <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
       <input
         {...props}
-        className="w-full bg-[var(--input)] border border-[var(--border)] rounded-full pl-10 pr-10 py-3 text-[14px] font-semibold text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-[var(--primary)]/30 transition-all"
+        className="neo-inset w-full rounded-full pl-10 pr-10 py-3 text-[14px] font-semibold text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/30 focus:border-[var(--primary)]/30 transition-all"
       />
       {right && <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{right}</div>}
     </div>
@@ -109,18 +109,21 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-4 py-8">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-4 py-8">
+      <div className="pointer-events-none absolute -left-24 top-12 h-80 w-80 rounded-full bg-[var(--purple)]/18 blur-3xl" />
+      <div className="pointer-events-none absolute -right-28 bottom-0 h-96 w-96 rounded-full bg-[var(--yellow)]/20 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30 bg-white/10 blur-sm" />
       <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-sm glass-panel rounded-[28px] overflow-hidden">
+        className="relative w-full max-w-[390px] premium-card rounded-[38px] overflow-hidden">
         <div className="h-px w-full bg-[var(--glass-highlight)]" />
 
-        <div className="px-8 py-8">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
+        <div className="px-8 py-8 sm:px-9 sm:py-9">
+          <div className="flex items-center gap-3 mb-9">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
               <Zap className="w-4 h-4 text-[var(--primary-foreground)]" />
             </div>
-            <span className="text-[15px] font-black text-[var(--foreground)] tracking-tight">Orbit</span>
+            <span className="text-[18px] font-black text-[var(--foreground)] tracking-tight">Orbit</span>
           </div>
 
           <div className="mb-6">
@@ -187,7 +190,7 @@ export const Login = () => {
             )}
 
             <button onClick={handleSubmit} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black text-[var(--primary-foreground)] disabled:opacity-50 btn-spring shadow-[var(--shadow-soft)] bg-[var(--primary)] hover:opacity-90">
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black text-[var(--primary-foreground)] disabled:opacity-50 premium-button bg-[var(--primary)] hover:opacity-90">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
 
@@ -200,7 +203,7 @@ export const Login = () => {
             <p className="text-center text-[10px] font-semibold text-[var(--muted)]">Join With Your Favorite Social Media Account</p>
             <div className="flex items-center justify-center gap-3">
               <button onClick={handleGoogle} disabled={googleLoading}
-                className="w-9 h-9 rounded-full border border-[var(--border)] bg-[var(--input)] text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl flex items-center justify-center">
+                className="neo-raised w-10 h-10 rounded-full text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl flex items-center justify-center">
                 {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
               </button>
             </div>
