@@ -13,6 +13,10 @@ api.interceptors.request.use(async (config) => {
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
   }
+  if (typeof window !== 'undefined') {
+    const adminToken = localStorage.getItem('orbit-admin-token');
+    if (adminToken) config.headers['X-Admin-Token'] = adminToken;
+  }
   return config;
 });
 

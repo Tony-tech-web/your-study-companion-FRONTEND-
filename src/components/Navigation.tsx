@@ -12,6 +12,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_SESSION_EVENT, hasStoredAdminToken } from '../services/admin';
 
 const navItems = [
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard, href: '/dashboard' },
@@ -126,6 +127,20 @@ export const Sidebar = () => {
   const handleSignOut = async () => { await signOut(); router.push('/login'); };
   const displayName = (user?.user_metadata?.full_name as string)?.split(' ')[0] || user?.email?.split('@')[0] || 'Student';
   const initials = displayName.slice(0, 2).toUpperCase();
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+
+  useEffect(() => {
+    const syncAdmin = () => setAdminUnlocked(hasStoredAdminToken());
+    syncAdmin();
+    window.addEventListener(ADMIN_SESSION_EVENT, syncAdmin);
+    window.addEventListener('storage', syncAdmin);
+    return () => {
+      window.removeEventListener(ADMIN_SESSION_EVENT, syncAdmin);
+      window.removeEventListener('storage', syncAdmin);
+    };
+  }, []);
+
+  const visibleNavItems = navItems.filter(item => item.id !== 'admin' || adminUnlocked);
 
   return (
     <>
@@ -151,7 +166,7 @@ export const Sidebar = () => {
 
         {/* Nav */}
         <nav className="flex-1 flex flex-col gap-0.5 p-2 overflow-y-auto custom-scrollbar">
-          {navItems.map(item => {
+          {visibleNavItems.map(item => {
             const active = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
             return (
               <Link key={item.id} href={item.href} title={collapsed ? item.label : undefined}
@@ -225,6 +240,20 @@ export const MobileNav = () => {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [showStatus, setShowStatus] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+
+  useEffect(() => {
+    const syncAdmin = () => setAdminUnlocked(hasStoredAdminToken());
+    syncAdmin();
+    window.addEventListener(ADMIN_SESSION_EVENT, syncAdmin);
+    window.addEventListener('storage', syncAdmin);
+    return () => {
+      window.removeEventListener(ADMIN_SESSION_EVENT, syncAdmin);
+      window.removeEventListener('storage', syncAdmin);
+    };
+  }, []);
+
+  const visibleNavItems = navItems.filter(item => item.id !== 'admin' || adminUnlocked);
 
   return (
     <>
@@ -261,7 +290,7 @@ export const MobileNav = () => {
                 </button>
               </div>
               <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto custom-scrollbar">
-                {navItems.map(item => {
+                {visibleNavItems.map(item => {
                   const active = pathname === item.href;
                   return (
                     <Link key={item.id} href={item.href} onClick={() => setOpen(false)}
