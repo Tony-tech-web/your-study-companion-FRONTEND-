@@ -50,7 +50,7 @@ export const News = () => {
             <button key={cat} onClick={() => setActiveCategory(cat)}
               className={cn('shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all',
                 activeCategory === cat
-                  ? 'bg-[var(--primary)] text-white'
+                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                   : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
               {cat}
             </button>

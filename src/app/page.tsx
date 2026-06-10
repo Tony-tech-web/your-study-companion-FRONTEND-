@@ -161,10 +161,10 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] overflow-x-hidden">
 
       {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-12 h-16 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-12 h-16 bg-[var(--glass-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[var(--shadow-soft)]">
             <Zap className="w-4 h-4 text-black" />

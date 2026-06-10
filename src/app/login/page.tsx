@@ -19,8 +19,10 @@ export default function Page() {
   // Show spinner while checking — don't flash login form
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
-        <Loader2 className="w-5 h-5 text-white animate-spin" />
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center text-[var(--foreground)]">
+        <div className="premium-card flex h-12 w-12 items-center justify-center rounded-[22px]">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
       </div>
     );
   }

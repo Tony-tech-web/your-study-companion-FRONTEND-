@@ -79,7 +79,7 @@ export const Chat = () => {
         </div>
         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--primary)]/8 border border-[var(--primary)]/20 cursor-pointer">
-            <div className="w-9 h-9 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center text-sm font-black shrink-0">G</div>
+            <div className="w-9 h-9 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-black shrink-0">G</div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold text-[var(--foreground)] truncate">Global Study Hub</p>
               <p className="text-[11px] text-[var(--muted)] truncate">Campus-wide channel</p>
@@ -95,7 +95,7 @@ export const Chat = () => {
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center text-sm font-black md:hidden">G</div>
+            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-black md:hidden">G</div>
             <div>
               <p className="text-[14px] font-bold text-[var(--foreground)]">Global Study Hub</p>
               <div className="flex items-center gap-1.5">
@@ -123,12 +123,12 @@ export const Chat = () => {
                   transition={{ type: 'spring', damping: 24, stiffness: 140 }}
                   className={cn('flex gap-2.5', isMe ? 'flex-row-reverse' : '')}>
                   <div className={cn('w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5',
-                    isMe ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] border border-[var(--border)] text-[var(--muted)]')}>
+                    isMe ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--input)] border border-[var(--border)] text-[var(--muted)]')}>
                     {isMe ? (user?.email?.slice(0, 2).toUpperCase() || 'ME') : 'U'}
                   </div>
                   <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm',
                     isMe
-                      ? 'bg-[var(--primary)] text-white rounded-tr-none'
+                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-none'
                       : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] rounded-tl-none')}>
                     <p className="leading-relaxed">{msg.content}</p>
                     <p className={cn('text-[10px] mt-1 opacity-60', isMe ? 'text-right' : '')}>
@@ -150,7 +150,7 @@ export const Chat = () => {
               placeholder="Send a message..."
               className="flex-1 bg-transparent border-none focus:outline-none text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40" />
             <button onClick={handleSend} disabled={sending || !input.trim()}
-              className="w-8 h-8 bg-[var(--primary)] text-white rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
+              className="w-8 h-8 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
               {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             </button>
           </div>

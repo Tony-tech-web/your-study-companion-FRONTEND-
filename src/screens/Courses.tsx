@@ -107,7 +107,7 @@ export const Courses = () => {
             <p className="text-xs text-[var(--muted)] mt-0.5">{pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''} in your library</p>
           </div>
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}>
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Upload PDF
@@ -139,7 +139,7 @@ export const Courses = () => {
             dragging ? 'border-[var(--primary)] bg-[var(--primary)]/5' : 'border-[var(--border)] hover:border-[var(--primary)]/40 hover:bg-[var(--accent)]'
           )}>
           <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all',
-            dragging ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input)] text-[var(--muted)]')}>
+            dragging ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--input)] text-[var(--muted)]')}>
             {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
           </div>
           <p className="text-sm font-semibold text-[var(--foreground)]">

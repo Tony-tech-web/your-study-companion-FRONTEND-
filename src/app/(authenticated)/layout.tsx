@@ -18,12 +18,12 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 
   if (!mounted || loading) {
     return (
-      <div style={{ height: '100dvh' }} className="flex items-center justify-center bg-[var(--background)]">
+      <div style={{ height: '100dvh' }} className="flex items-center justify-center bg-[var(--background)] text-[var(--foreground)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-lg">
-            <Loader2 className="w-4 h-4 text-white animate-spin" />
+          <div className="premium-card w-11 h-11 rounded-[20px] flex items-center justify-center">
+            <Loader2 className="w-4 h-4 text-[var(--foreground)] animate-spin" />
           </div>
-          <p className="text-xs text-[var(--muted)]">Loading...</p>
+          <p className="text-xs font-bold text-[var(--muted)]">Loading Orbit</p>
         </div>
       </div>
     );

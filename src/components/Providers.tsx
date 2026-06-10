@@ -9,7 +9,7 @@ function ThemeClassBridge() {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    const darkLike = resolvedTheme === 'dark' || resolvedTheme === 'brown';
+    const darkLike = resolvedTheme === 'dark';
     document.documentElement.classList.toggle('dark', darkLike);
   }, [resolvedTheme]);
 
@@ -18,7 +18,7 @@ function ThemeClassBridge() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem={false} enableColorScheme={false}>
+    <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem={false} enableColorScheme={false}>
       <ThemeClassBridge />
       <DialogProvider>
         <AuthProvider>

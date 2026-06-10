@@ -72,7 +72,7 @@ export const Leaderboard = () => {
                       <img src={top3[0].avatar} alt={top3[0].name} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                       <div className="absolute inset-0 flex items-center justify-center text-xl font-black" style={{ color: 'var(--primary)' }}>{top3[0].name.slice(0,2).toUpperCase()}</div>
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--primary)] flex items-center justify-center text-[10px] font-black text-white">1</div>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--primary)] flex items-center justify-center text-[10px] font-black text-[var(--primary-foreground)]">1</div>
                   </div>
                   <div className="text-center">
                     <p className="text-[13px] font-bold text-[var(--foreground)] truncate max-w-[90px]">{top3[0].name}</p>
@@ -107,7 +107,7 @@ export const Leaderboard = () => {
         {myRank && myRank.rank > 3 && (
           <div className="bg-[var(--primary)]/8 border border-[var(--primary)]/20 rounded-xl p-3 flex items-center gap-3">
             <span className="text-sm font-bold text-[var(--primary)] w-8">#{myRank.rank}</span>
-            <div className="w-8 h-8 rounded-lg bg-[var(--primary)] text-white flex items-center justify-center text-xs font-black shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xs font-black shrink-0">
               {user?.email?.slice(0,2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

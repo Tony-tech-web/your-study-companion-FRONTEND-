@@ -197,23 +197,24 @@ export const Dashboard = () => {
                   transition={{ delay: 0.18 + i * 0.05, duration: 0.28 }}
                   onClick={() => router.push(a.href)}
                   className={cn(
-                    'group relative min-h-[154px] overflow-hidden rounded-[28px] border border-white/10 p-4 text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 active:scale-[0.99]',
-                    a.wide && 'col-span-2 min-h-[178px]'
+                    'group relative min-h-[154px] overflow-hidden rounded-[24px] border border-white/10 p-4 text-left shadow-[0_18px_50px_rgba(0,0,0,0.26)] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 active:scale-[0.99]',
+                    a.wide && 'col-span-2 min-h-[184px]'
                   )}
                   style={{
-                    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.38)), url(${a.image})`,
+                    backgroundImage: `url(${a.image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
                 >
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.54)_34%,rgba(0,0,0,0.14)_100%)]" />
                   <div className="relative z-10 flex h-full min-h-[122px] flex-col justify-between">
-                    <div>
-                      <p className="max-w-[78%] truncate text-base font-black text-white">{a.label}</p>
-                      <p className="mt-1 max-w-[78%] truncate text-xs font-bold text-white/65">{a.sub}</p>
-                    </div>
-                    <span className="inline-flex h-9 w-fit items-center rounded-full bg-white px-4 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
+                    <span className="ml-auto inline-flex h-8 items-center rounded-full bg-white px-4 text-[11px] font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
                       Open
                     </span>
+                    <div>
+                      <p className="max-w-[72%] truncate text-base font-black text-white">{a.label}</p>
+                      <p className="mt-1 max-w-[72%] truncate text-xs font-bold text-white/65">{a.sub}</p>
+                    </div>
                   </div>
                 </motion.button>
               ))}

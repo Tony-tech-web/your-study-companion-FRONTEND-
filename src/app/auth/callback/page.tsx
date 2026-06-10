@@ -40,14 +40,16 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4">
-      <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-[var(--shadow-soft)]">
-        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col items-center justify-center gap-4 px-6">
+      <div className="premium-card flex w-full max-w-xs flex-col items-center gap-4 p-8 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
+          <svg className="w-6 h-6 text-[var(--primary-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <Loader2 className="w-5 h-5 text-[var(--foreground)] animate-spin" />
+        <p className="text-sm text-[var(--muted)] font-semibold">Completing sign in...</p>
       </div>
-      <Loader2 className="w-5 h-5 text-white animate-spin" />
-      <p className="text-sm text-zinc-400 font-medium">Completing sign in...</p>
     </div>
   );
 }
