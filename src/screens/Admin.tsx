@@ -38,7 +38,7 @@ const Panel = ({ title, subtitle, icon: Icon, children, className }: {
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-    className={cn('premium-card rounded-[30px] p-5', className)}
+    className={cn('stitch-glass-card rounded-[32px] p-5', className)}
   >
     <div className="mb-5 flex items-start justify-between gap-4">
       <div>
@@ -85,9 +85,9 @@ const AdminLogin = ({ onAuthenticated }: { onAuthenticated: (admin: AdminIdentit
           onSubmit={submit}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          className="premium-card grid w-full max-w-4xl overflow-hidden rounded-[36px] p-3 md:grid-cols-[1.05fr_0.95fr]"
+        className="stitch-glass-card grid w-full max-w-4xl overflow-hidden rounded-[36px] p-3 md:grid-cols-[1.05fr_0.95fr]"
         >
-          <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--foreground)] p-7 text-[var(--background)]">
+          <div className="relative min-h-[320px] overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--foreground)] p-7 text-[var(--background)]">
             <div className="absolute bottom-8 right-8 h-28 w-28 rounded-[36px] border border-white/15 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-2xl" />
             <div className="relative z-10 flex h-full flex-col justify-between">
               <div>
@@ -113,7 +113,7 @@ const AdminLogin = ({ onAuthenticated }: { onAuthenticated: (admin: AdminIdentit
             <label className="mt-5 block text-[11px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Password</label>
             <input value={password} onChange={event => setPassword(event.target.value)} type="password" className="mt-2 h-12 w-full rounded-full border border-[var(--border)] bg-[var(--input)] px-4 text-sm font-bold outline-none focus:border-[var(--primary)]" />
             {error && <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-400">{error}</div>}
-            <button disabled={busy || !username.trim() || !password} className="premium-button mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] disabled:opacity-50">
+            <button disabled={busy || !username.trim() || !password} className="stitch-neo-button mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
               Unlock admin
             </button>
@@ -182,7 +182,7 @@ export const Admin = () => {
     return (
       <div className="flex-1 bg-[var(--background)] text-[var(--foreground)]">
         <div className="flex min-h-full items-center justify-center p-6">
-          <div className="premium-card flex items-center gap-3 rounded-[28px] px-5 py-4 text-sm font-black text-[var(--muted)]">
+          <div className="stitch-glass-card flex items-center gap-3 rounded-[28px] px-5 py-4 text-sm font-black text-[var(--muted)]">
             <Loader2 className="h-4 w-4 animate-spin" />
             Checking admin session
           </div>
@@ -208,7 +208,7 @@ export const Admin = () => {
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
       <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 lg:pb-8">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="premium-card rounded-[36px] p-6 sm:p-7">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="stitch-glass-card rounded-[36px] p-6 sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--input)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">
@@ -227,7 +227,7 @@ export const Admin = () => {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map(([label, value, Icon]) => (
-            <div key={String(label)} className="premium-card rounded-[28px] p-4">
+            <div key={String(label)} className="stitch-glass-card rounded-[28px] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">{String(label)}</p>
                 {React.createElement(Icon as React.ElementType, { className: 'h-4 w-4 text-[var(--muted)]' })}
@@ -265,7 +265,7 @@ export const Admin = () => {
               <input value={draft.title} onChange={event => setDraft(v => ({ ...v, title: event.target.value }))} placeholder="Title" className="h-11 w-full rounded-full border border-[var(--border)] bg-[var(--input)] px-4 text-sm font-bold outline-none" />
               <input value={draft.category} onChange={event => setDraft(v => ({ ...v, category: event.target.value }))} placeholder="Category" className="h-11 w-full rounded-full border border-[var(--border)] bg-[var(--input)] px-4 text-sm font-bold outline-none" />
               <textarea value={draft.content} onChange={event => setDraft(v => ({ ...v, content: event.target.value }))} placeholder="Announcement content" className="min-h-28 w-full resize-none rounded-[24px] border border-[var(--border)] bg-[var(--input)] p-4 text-sm font-bold outline-none" />
-              <button disabled={savingNews || !draft.title.trim() || !draft.content.trim()} className="premium-button flex h-11 w-full items-center justify-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] disabled:opacity-50">
+              <button disabled={savingNews || !draft.title.trim() || !draft.content.trim()} className="stitch-neo-button flex h-11 w-full items-center justify-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] disabled:opacity-50">
                 {savingNews ? 'Publishing...' : 'Publish news'}
               </button>
             </form>

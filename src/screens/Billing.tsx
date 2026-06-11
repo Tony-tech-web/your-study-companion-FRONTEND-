@@ -75,7 +75,7 @@ export const Billing = () => {
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
       {selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xl">
-          <div className="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+          <div className="stitch-glass-card w-full max-w-lg rounded-[32px] p-5 shadow-[var(--shadow-floating)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--muted)]">Review plan</p>
@@ -91,7 +91,7 @@ export const Billing = () => {
               const breakdown = getBreakdown(selectedPlan);
               return (
                 <div className="mt-5 space-y-4">
-                  <div className="rounded-3xl border border-[var(--border)] bg-[var(--input)] p-4">
+                  <div className="stitch-neo-inset rounded-[28px] p-4">
                     {[
                       ['Plan access', formatNaira(breakdown.base)],
                       [`Owner margin (${Math.round(breakdown.marginRate * 100)}%)`, formatNaira(breakdown.margin)],
@@ -105,18 +105,18 @@ export const Billing = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
+                    <div className="stitch-neo-inset rounded-[24px] p-3">
                       <p className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">AI tokens</p>
                       <p className="mt-1 text-lg font-black">{selectedPlan.ai_token_limit?.toLocaleString?.() || 'Custom'}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3">
+                    <div className="stitch-neo-inset rounded-[24px] p-3">
                       <p className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">Provider cost</p>
                       <p className="mt-1 text-lg font-black">${breakdown.estimate?.provider_cost_usd ?? '0.00'}</p>
                     </div>
                   </div>
 
                   {Object.keys(breakdown.providers).length > 0 && (
-                    <div className="rounded-3xl border border-[var(--border)] bg-[var(--input)] p-4">
+                    <div className="stitch-neo-inset rounded-[28px] p-4">
                       <p className="mb-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Provider allocation</p>
                       {Object.entries(breakdown.providers).map(([provider, config]: any) => (
                         <div key={provider} className="flex items-center justify-between py-1.5 text-xs">
@@ -135,7 +135,7 @@ export const Billing = () => {
                   <button
                     onClick={() => checkout(selectedPlan)}
                     disabled={busyPlan === selectedPlan.slug}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-black text-black transition active:scale-[0.98] disabled:opacity-60"
+                    className="stitch-neo-button flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--foreground)] text-sm font-black text-[var(--background)] transition active:scale-[0.98] disabled:opacity-60"
                   >
                     {busyPlan === selectedPlan.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                     Continue to Paystack
@@ -146,24 +146,26 @@ export const Billing = () => {
           </div>
         </div>
       )}
-      <div className="mx-auto max-w-6xl p-6 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pt-2">
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
+        <div className="stitch-glass-card rounded-[36px] p-5 sm:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-black text-[var(--muted)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--input)] px-3 py-1 text-[11px] font-black text-[var(--muted)]">
               <CreditCard className="h-3.5 w-3.5" />
               Paystack billing
             </div>
-            <h1 className="mt-4 text-3xl font-black tracking-tight">Flexible Plans for Every Stage</h1>
+            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Flexible Plans for Every Stage</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
               Monthly, yearly, and focused sprint access for Orbit AI usage. Payments are verified on the backend before features activate.
             </p>
           </div>
           {status?.subscription && (
-            <div className="glass-panel rounded-[24px] px-4 py-3 text-sm">
+            <div className="stitch-neo-inset rounded-[24px] px-4 py-3 text-sm">
               <p className="text-[11px] font-black uppercase tracking-wider text-[var(--muted)]">Current plan</p>
               <p className="mt-1 font-black">{status.subscription.plan?.name || 'Active subscription'}</p>
             </div>
           )}
+        </div>
         </div>
 
         {error && (
@@ -173,7 +175,7 @@ export const Billing = () => {
         )}
 
         {loading ? (
-          <div className="glass-panel rounded-[28px] p-10 flex justify-center">
+          <div className="stitch-glass-card rounded-[32px] p-10 flex justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-[var(--muted)]" />
           </div>
         ) : (
@@ -186,7 +188,7 @@ export const Billing = () => {
                 <article
                   key={plan.slug}
                   className={cn(
-                    'glass-panel rounded-[28px] p-5 min-h-[360px] flex flex-col transition-all',
+                    'stitch-glass-card rounded-[32px] p-5 min-h-[360px] flex flex-col transition-all hover:-translate-y-1',
                     featured && 'border-blue-400/45 bg-blue-500/10 shadow-[0_24px_80px_rgba(77,163,255,0.18)]',
                     !plan.active && 'opacity-70'
                   )}
@@ -231,7 +233,7 @@ export const Billing = () => {
                       {plan.ai_token_limit ? `${plan.ai_token_limit.toLocaleString()} AI tokens included` : 'Custom AI allowance'}
                     </div>
                     {estimate && (
-                      <div className="rounded-2xl border border-[var(--border)] bg-[var(--input)] p-3 space-y-1">
+                      <div className="stitch-neo-inset rounded-2xl p-3 space-y-1">
                         <div className="flex justify-between gap-3">
                           <span>Provider cost</span>
                           <span>${estimate.provider_cost_usd}</span>

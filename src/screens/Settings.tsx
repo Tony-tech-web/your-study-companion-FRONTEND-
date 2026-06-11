@@ -20,7 +20,7 @@ const themeOptions = [
 ] as const;
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="glass-panel rounded-[22px] p-3.5 space-y-3">
+  <section className="stitch-glass-card rounded-[28px] p-4 space-y-3">
     <h2 className="text-[12px] font-black uppercase tracking-[0.18em] text-[var(--muted)]">{title}</h2>
     {children}
   </section>
@@ -121,7 +121,7 @@ export const Settings = () => {
           <p className="text-xs text-[var(--muted)] mt-1">Profile, billing, security, usage, and theme controls.</p>
         </div>
 
-        <div className="glass-panel overflow-hidden rounded-[30px] p-0">
+        <div className="stitch-glass-card overflow-hidden rounded-[32px] p-0">
           <div className="h-24 border-b border-[var(--border)] bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.16),transparent_28%),linear-gradient(135deg,var(--input),var(--card))]" />
           <div className="px-4 pb-4">
             <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -167,7 +167,7 @@ export const Settings = () => {
               const active = theme === value;
               return (
                 <button key={value} onClick={() => setTheme(value)}
-                  className={cn('glass-panel rounded-2xl p-3 text-left transition-all active:scale-[0.98]',
+                  className={cn('stitch-glass-card rounded-2xl p-3 text-left transition-all active:scale-[0.98]',
                     active ? 'border-[var(--primary)] shadow-[var(--shadow-soft)]' : 'hover:border-[var(--primary)]/35')}>
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="w-8 h-8 rounded-xl bg-[var(--input)] border border-[var(--border)] flex items-center justify-center">

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, Zap } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
@@ -118,18 +118,16 @@ export const Login = () => {
         className="relative w-full max-w-[390px] premium-card rounded-[38px] overflow-hidden">
         <div className="h-px w-full bg-[var(--glass-highlight)]" />
 
-        <div className="px-8 py-8 sm:px-9 sm:py-9">
-          <div className="flex items-center gap-3 mb-9">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--primary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
-              <Zap className="w-4 h-4 text-[var(--primary-foreground)]" />
-            </div>
-            <span className="text-[18px] font-black text-[var(--foreground)] tracking-tight">Orbit</span>
+        <div className="px-8 py-8 sm:px-10 sm:py-10">
+          <div className="mb-8 text-center">
+            <h1 className="font-display text-[34px] font-semibold leading-[41px] tracking-[-0.02em] text-[var(--primary)]">Orbit</h1>
+            <p className="mt-2 text-[15px] leading-5 text-[var(--muted)]">Elevate your focus.</p>
           </div>
 
           <div className="mb-6">
-            <h1 className="text-[22px] font-black text-[var(--foreground)] tracking-tight">
+            <h2 className="text-[24px] font-black text-[var(--foreground)] tracking-tight">
               {mode === 'login' ? 'Sign in' : 'Create account'}
-            </h1>
+            </h2>
             <p className="text-[13px] text-[var(--muted)] mt-0.5">
               {mode === 'login' ? 'New user?' : 'Already have an account?'}{' '}
               <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')} className="font-black text-[var(--foreground)] hover:opacity-75 transition-colors">
@@ -200,18 +198,23 @@ export const Login = () => {
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
 
-            <p className="text-center text-[10px] font-semibold text-[var(--muted)]">Join With Your Favorite Social Media Account</p>
+            <p className="text-center text-[10px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Or continue with</p>
             <div className="flex items-center justify-center gap-3">
+              <button disabled
+                className="neo-raised w-10 h-10 rounded-full text-[13px] font-black text-[var(--foreground)] opacity-55 backdrop-blur-xl flex items-center justify-center">
+                A
+              </button>
               <button onClick={handleGoogle} disabled={googleLoading}
                 className="neo-raised w-10 h-10 rounded-full text-[13px] font-semibold text-[var(--foreground)] hover:bg-[var(--accent)] btn-spring transition-all disabled:opacity-50 backdrop-blur-xl flex items-center justify-center">
                 {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
               </button>
             </div>
 
-            <p className="text-center text-[11px] text-[var(--muted)] leading-relaxed">
-              By signing in, you agree to Orbit&apos;s{' '}
-              <span className="underline cursor-pointer">Terms of Service</span> and{' '}
-              <span className="underline cursor-pointer">Privacy Policy</span>
+            <p className="text-center text-[13px] text-[var(--muted)] leading-relaxed">
+              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+              <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')} className="font-black text-[var(--primary)]">
+                {mode === 'login' ? 'Sign Up' : 'Sign In'}
+              </button>
             </p>
           </div>
         </div>

@@ -106,13 +106,14 @@ export const Research = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-5xl mx-auto w-full p-4 sm:p-6 space-y-4 sm:space-y-5 pb-28 lg:pb-8">
+      <div className="max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-10 space-y-6 pb-28 lg:pb-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="sticky top-0 z-30 -mx-4 bg-[var(--background)]/80 px-4 pt-2 pb-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Research</h1>
-            <p className="text-xs text-[var(--muted)] mt-0.5">Powered by Serper + AI — live search with insights</p>
+            <h1 className="font-display text-[34px] font-semibold leading-[41px] tracking-[-0.02em] text-[var(--foreground)]">Research Explorer</h1>
+            <p className="mt-2 text-[17px] leading-6 text-[var(--muted)]">Discover, analyze, and synthesize academic literature.</p>
           </div>
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live
@@ -120,19 +121,19 @@ export const Research = () => {
         </div>
 
         {/* Search */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+        <div className="mt-4 space-y-3">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] opacity-40" />
               <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 placeholder="Search papers, projects, datasets..."
-                className="w-full bg-[var(--input)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
+                className="stitch-neo-inset w-full rounded-full border-none py-4 pl-10 pr-4 text-[17px] leading-6 text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20" />
             </div>
             <button onClick={handleSearch} disabled={searching || !query.trim()}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
+              className="h-12 w-12 shrink-0 rounded-full text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
               style={{ backgroundColor: 'var(--primary)' }}>
-              {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+              {searching ? <Loader2 className="mx-auto w-4 h-4 animate-spin" /> : '→'}
             </button>
           </div>
           {/* Mode tabs */}
@@ -142,8 +143,8 @@ export const Research = () => {
               { key: 'projects' as FilterMode, label: 'Projects', icon: Code2 },
             ]).map(({ key, label, icon: Icon }) => (
               <button key={key} onClick={() => setFilterMode(key)}
-                className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all',
-                  key === filterMode ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--input)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]')}>
+                className={cn('flex items-center gap-2 rounded-full border border-[var(--glass-border)] px-4 py-2 text-[15px] leading-5 transition-all',
+                  key === filterMode ? 'bg-[var(--primary-container)] text-[var(--primary-foreground)] shadow-[var(--inner-glow)]' : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
                 <Icon className="w-3.5 h-3.5" />
                 {label}
               </button>
@@ -172,7 +173,7 @@ export const Research = () => {
             )}
 
             {searching && (
-              <div className="flex items-center justify-center py-16 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+              <div className="stitch-glass-card flex items-center justify-center rounded-xl py-16">
                 <Loader2 className="w-6 h-6 animate-spin text-[var(--primary)]" />
                 <span className="ml-3 text-sm text-[var(--muted)]">Searching with AI analysis...</span>
               </div>
@@ -182,7 +183,7 @@ export const Research = () => {
             {!searching && activeTab === 'results' && (
               <>
                 {hasSearched && results.length === 0 && (
-                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-12 text-center">
+                  <div className="stitch-glass-card rounded-xl p-12 text-center">
                     <Search className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
                     <p className="text-sm text-[var(--muted)] opacity-40">No results in this category</p>
                   </div>
@@ -193,7 +194,7 @@ export const Research = () => {
                       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => setSelected(r === selected ? null : r)}
-                      className={cn('bg-[var(--card)] border rounded-xl p-4 cursor-pointer transition-all hover:shadow-sm',
+                      className={cn('stitch-glass-card group relative overflow-hidden rounded-xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.01]',
                         selected?.id === r.id ? 'border-[var(--primary)]' : 'border-[var(--border)] hover:border-[var(--primary)]/40')}>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="text-[13px] font-semibold text-[var(--foreground)] leading-snug line-clamp-2">{r.title}</h3>
@@ -204,7 +205,14 @@ export const Research = () => {
                           </a>
                         )}
                       </div>
-                      <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2.5">{r.snippet}</p>
+                      <p className="text-[15px] leading-5 text-[var(--foreground)] line-clamp-3 mb-4">{r.snippet}</p>
+                      <div className="mb-4 flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--inverse-on-surface)]/30 p-4">
+                        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
+                        <div>
+                          <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--primary)]">AI Insight Synthesis</p>
+                          <p className="text-[13px] leading-5 text-[var(--muted)]">{searchData?.insights || 'Select this source to generate a citation, save it, or use it in your next research pass.'}</p>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--input)] border border-[var(--border)] text-[var(--muted)]">{r.source}</span>
                         {r.isGitHub && <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-500">GitHub</span>}
@@ -230,7 +238,7 @@ export const Research = () => {
             {!searching && activeTab === 'insights' && searchData && (
               <div className="space-y-3">
                 {searchData.insights && (
-                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+                  <div className="stitch-glass-card rounded-xl p-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Lightbulb className="w-4 h-4 text-[var(--primary)]" />
                       <p className="text-[13px] font-semibold text-[var(--foreground)]">AI Summary</p>
@@ -239,7 +247,7 @@ export const Research = () => {
                   </div>
                 )}
                 {searchData.projectIdeas.length > 0 && (
-                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+                  <div className="stitch-glass-card rounded-xl p-6">
                     <p className="text-[13px] font-semibold text-[var(--foreground)] mb-3">{filterMode === 'projects' ? 'Enhancement Ideas' : 'Research Directions'}</p>
                     <div className="space-y-2">
                       {searchData.projectIdeas.map((idea, i) => (
@@ -252,7 +260,7 @@ export const Research = () => {
                   </div>
                 )}
                 {searchData.gaps.length > 0 && (
-                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+                  <div className="stitch-glass-card rounded-xl p-6">
                     <p className="text-[13px] font-semibold text-[var(--foreground)] mb-2">Research Gaps</p>
                     <ul className="space-y-1">
                       {searchData.gaps.map((g, i) => <li key={i} className="text-[12px] text-[var(--muted)] flex items-start gap-1.5"><span className="text-[var(--primary)] shrink-0 mt-0.5">•</span>{g}</li>)}
@@ -260,7 +268,7 @@ export const Research = () => {
                   </div>
                 )}
                 {searchData.relatedTopics.length > 0 && (
-                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+                  <div className="stitch-glass-card rounded-xl p-6">
                     <p className="text-[13px] font-semibold text-[var(--foreground)] mb-2">Related Topics</p>
                     <div className="flex flex-wrap gap-2">
                       {searchData.relatedTopics.map((t, i) => (
@@ -277,7 +285,7 @@ export const Research = () => {
 
             {/* History */}
             {!searching && !hasSearched && (
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+              <div className="stitch-glass-card rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
                   <p className="text-[12px] font-semibold text-[var(--foreground)]">Recent Searches</p>
@@ -309,7 +317,7 @@ export const Research = () => {
           </div>
 
           <div className="space-y-4 sticky top-0 self-start">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="stitch-glass-card rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <Code2 className="w-4 h-4 text-[var(--primary)]" />
               <p className="text-[13px] font-semibold text-[var(--foreground)]">Saved Work</p>
@@ -351,7 +359,7 @@ export const Research = () => {
           </div>
 
           {/* Citation panel */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="stitch-glass-card rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <BookOpen className="w-4 h-4 text-[var(--primary)]" />
               <p className="text-[13px] font-semibold text-[var(--foreground)]">Citation</p>
@@ -389,6 +397,7 @@ export const Research = () => {
             )}
           </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
