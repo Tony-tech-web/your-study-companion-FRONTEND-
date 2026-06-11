@@ -190,7 +190,7 @@ day is 0=Sun,1=Mon,...,6=Sat. hour is 24h, minute must be 0, 15, 30, or 45. dura
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-2xl bg-[var(--card)] rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        className="stitch-glass-card w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] shrink-0">
@@ -504,7 +504,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
         </div>
 
         {/* Progress bar */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+        <div className="stitch-glass-card rounded-[28px] p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold">Progress</span>
             <span className="text-sm font-bold text-[var(--primary)]">{progress}%</span>
@@ -521,7 +521,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
         {/* Main content: schedule + hour breakdown side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Hours breakdown column */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+          <div className="stitch-glass-card rounded-[28px] p-4 space-y-3">
             <p className="text-sm font-semibold text-[var(--foreground)]">Weekly Hours</p>
             {plan.subjects.map((sub, i) => {
               const hrs = hoursPerSubject;
@@ -546,7 +546,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
           </div>
 
           {/* Calendar */}
-          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+          <div className="stitch-glass-card lg:col-span-2 rounded-[28px] overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[var(--primary)]" />
               <p className="text-sm font-semibold text-[var(--foreground)]">This Week</p>
@@ -614,7 +614,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
             </div>
           </div>
 
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+          <div className="stitch-glass-card rounded-[28px] p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4 text-[var(--primary)]" />
               <p className="text-sm font-semibold text-[var(--foreground)]">Calendar Reminders</p>
@@ -636,7 +636,7 @@ const PlanDetail = ({ plan, onBack, onDelete, onEdit, onPlanUpdate }: { plan: St
 
         {/* Subjects quick view */}
         {plan.subjects.length > 0 && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="stitch-glass-card rounded-[28px] p-4">
             <p className="text-sm font-semibold mb-3">Subjects</p>
             <div className="flex flex-wrap gap-2">
               {plan.subjects.map((s, i) => (
@@ -729,7 +729,7 @@ export const Planner = () => {
               { label: 'Hours', value: `${totalHours}h` },
               { label: 'Avg Progress', value: `${avgProgress}%` },
             ].map(s => (
-              <div key={s.label} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+              <div key={s.label} className="stitch-glass-card rounded-[28px] p-4">
                 <p className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider mb-1">{s.label}</p>
                 <p className="text-2xl font-bold tracking-tight">{s.value}</p>
               </div>
@@ -737,7 +737,7 @@ export const Planner = () => {
           </div>
         )}
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
+        <div className="stitch-glass-card rounded-[32px] p-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-[var(--foreground)]">Calendar Actions</p>
@@ -794,7 +794,7 @@ export const Planner = () => {
         </div>
 
         {plans.length === 0 ? (
-          <div className="bg-[var(--card)] border-2 border-dashed border-[var(--border)] rounded-xl p-16 text-center">
+          <div className="stitch-glass-card border-2 border-dashed border-[var(--border)] rounded-[32px] p-16 text-center">
             <Calendar className="w-10 h-10 text-[var(--muted)] opacity-20 mx-auto mb-3" />
             <p className="text-sm text-[var(--muted)] opacity-50 mb-4">No study plans yet</p>
             <button onClick={() => { setEditingPlan(null); setShowModal(true); }}
@@ -808,7 +808,7 @@ export const Planner = () => {
             {plans.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                 onClick={() => setSelectedPlan(plan)}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all cursor-pointer group">
+                className="stitch-glass-card rounded-[28px] p-4 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all cursor-pointer group">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0 mr-3">
                     <h3 className="text-[14px] font-semibold truncate">{plan.name}</h3>

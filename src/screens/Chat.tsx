@@ -67,18 +67,18 @@ export const Chat = () => {
   if (loading) return <ListSkeleton rows={6} />;
 
   return (
-    <div className="flex-1 flex bg-[var(--background)] text-[var(--foreground)] overflow-hidden h-full">
+    <div className="stitch-page flex-1 flex bg-[var(--background)] text-[var(--foreground)] overflow-hidden h-full p-3 gap-3">
       {/* Sidebar */}
-      <div className="w-72 border-r border-[var(--border)] hidden md:flex flex-col bg-[var(--card)] shrink-0">
+      <div className="stitch-glass-card w-72 hidden md:flex flex-col shrink-0 rounded-[32px] overflow-hidden">
         <div className="p-4 border-b border-[var(--border)] shrink-0">
           <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">Messages</h2>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--muted)] opacity-40" />
-            <input placeholder="Search..." className="w-full bg-[var(--input)] border border-[var(--border)] rounded-xl pl-9 pr-3 py-2 text-xs text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
+            <input placeholder="Search..." className="stitch-neo-inset w-full rounded-full pl-9 pr-3 py-2 text-xs text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--primary)]/8 border border-[var(--primary)]/20 cursor-pointer">
+          <div className="stitch-neo-inset flex items-center gap-3 p-3 rounded-[24px] cursor-pointer">
             <div className="w-9 h-9 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-black shrink-0">G</div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold text-[var(--foreground)] truncate">Global Study Hub</p>
@@ -91,9 +91,9 @@ export const Chat = () => {
       </div>
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="stitch-glass-card flex-1 flex flex-col h-full overflow-hidden relative rounded-[32px]">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-black md:hidden">G</div>
             <div>
@@ -128,8 +128,8 @@ export const Chat = () => {
                   </div>
                   <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm',
                     isMe
-                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-none'
-                      : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] rounded-tl-none')}>
+                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-tr-md'
+                      : 'stitch-glass-card text-[var(--foreground)] rounded-tl-md')}>
                     <p className="leading-relaxed">{msg.content}</p>
                     <p className={cn('text-[10px] mt-1 opacity-60', isMe ? 'text-right' : '')}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -143,14 +143,14 @@ export const Chat = () => {
         </div>
 
         {/* Input */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent">
-          <div className="flex items-center gap-2.5 bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-2.5 shadow-lg focus-within:border-[var(--primary)] transition-all">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--background)]/90 via-[var(--background)]/75 to-transparent">
+          <div className="stitch-glass-card flex items-center gap-2.5 rounded-[28px] px-4 py-2.5 shadow-lg focus-within:border-[var(--primary)] transition-all">
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
               placeholder="Send a message..."
               className="flex-1 bg-transparent border-none focus:outline-none text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40" />
             <button onClick={handleSend} disabled={sending || !input.trim()}
-              className="w-8 h-8 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
+              className="stitch-neo-button w-9 h-9 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full flex items-center justify-center hover:opacity-90 active:scale-95 transition-all disabled:opacity-30">
               {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             </button>
           </div>

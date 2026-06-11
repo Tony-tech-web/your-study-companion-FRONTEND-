@@ -40,7 +40,7 @@ const AddModal = ({ onClose, onSave }: { onClose: () => void; onSave: (r: GPARec
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-md bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)] shadow-2xl">
+        className="stitch-glass-card w-full max-w-md rounded-[32px] p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-[var(--foreground)]">Add GPA Record</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent)] text-[var(--muted)] transition-all"><X className="w-4 h-4" /></button>
@@ -107,18 +107,18 @@ export const GPA = () => {
   if (loading) return <ListSkeleton rows={4} />;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+    <div className="stitch-page flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
       <AnimatePresence>{showModal && <AddModal onClose={() => setShowModal(false)} onSave={r => setRecords(prev => [r, ...prev])} />}</AnimatePresence>
       <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-5 pb-28 lg:pb-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="stitch-glass-card flex items-center justify-between rounded-[36px] p-5 sm:p-6">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">GPA Tracker</h1>
+            <h1 className="text-2xl sm:text-4xl font-black text-[var(--foreground)] tracking-tight">GPA Tracker</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{records.length} semester{records.length !== 1 ? 's' : ''} recorded</p>
           </div>
           <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90 active:scale-95 transition-all"
+            className="stitch-neo-button flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90 active:scale-95 transition-all"
             style={{ backgroundColor: 'var(--primary)' }}>
             <Plus className="w-4 h-4" /> Add Record
           </button>
@@ -126,18 +126,18 @@ export const GPA = () => {
 
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 relative overflow-hidden shadow-[var(--shadow-soft)]">
+          <div className="stitch-glass-card rounded-[28px] p-4 relative overflow-hidden shadow-[var(--shadow-soft)]">
             <div className="absolute right-2 top-2 opacity-10 text-[var(--foreground)]"><GraduationCap className="w-16 h-16" /></div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--muted)] mb-2">Cumulative GPA</p>
             <p className="text-3xl font-bold tracking-tight text-[var(--foreground)]">{cumGPA}</p>
             <p className="text-[11px] mt-1 text-[var(--muted)]">{classify(parseFloat(cumGPA))}</p>
           </div>
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="stitch-glass-card rounded-[28px] p-4">
             <p className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Total Credits</p>
             <p className="text-3xl font-bold text-[var(--foreground)] tracking-tight">{totalCredits}</p>
             <p className="text-[11px] text-[var(--muted)] mt-1">Across all semesters</p>
           </div>
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="stitch-glass-card rounded-[28px] p-4">
             <p className="text-[11px] font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Semesters</p>
             <p className="text-3xl font-bold text-[var(--foreground)] tracking-tight">{records.length}</p>
             <p className="text-[11px] text-[var(--muted)] mt-1">Logged</p>
@@ -145,7 +145,7 @@ export const GPA = () => {
         </div>
 
         {/* Chart */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+        <div className="stitch-glass-card rounded-[32px] p-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-semibold text-[var(--foreground)]">GPA Trajectory</p>
             <span className="text-[11px] text-[var(--muted)]">All semesters</span>
@@ -176,7 +176,7 @@ export const GPA = () => {
         </div>
 
         {/* Records table */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+        <div className="stitch-glass-card rounded-[32px] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <p className="text-sm font-semibold text-[var(--foreground)]">Academic History</p>
             <button onClick={() => setShowModal(true)}

@@ -27,13 +27,13 @@ export const Leaderboard = () => {
   const top3 = entries.slice(0, 3);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5 pb-28 lg:pb-8">
+    <div className="stitch-page flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5 pb-28 lg:pb-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="stitch-glass-card flex items-center justify-between rounded-[36px] p-5 sm:p-6">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Leaderboard</h1>
+            <h1 className="text-2xl sm:text-4xl font-black text-[var(--foreground)] tracking-tight">Leaderboard</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{entries.length} students ranked globally</p>
           </div>
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
@@ -43,7 +43,7 @@ export const Leaderboard = () => {
 
         {/* Top 3 podium */}
         {top3.length > 0 && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+          <div className="stitch-glass-card rounded-[36px] p-5 sm:p-7 overflow-hidden">
             <div className="flex items-end justify-center gap-3">
               {/* 2nd */}
               {top3[1] && (
@@ -60,7 +60,7 @@ export const Leaderboard = () => {
                     <p className="text-[11px] text-[var(--muted)]">{top3[1].xp.toLocaleString()} XP</p>
                     {(top3[1] as any).title && <p className="text-[9px] text-[var(--muted)] opacity-60">{(top3[1] as any).title}</p>}
                   </div>
-                  <div className="w-full h-16 rounded-t-lg bg-[var(--input)] border-t border-x border-[var(--border)]" />
+                  <div className="w-full h-16 rounded-t-[24px] bg-[var(--input)] border-t border-x border-[var(--border)]" />
                 </motion.div>
               )}
               {/* 1st */}
@@ -79,7 +79,7 @@ export const Leaderboard = () => {
                     <p className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>{top3[0].xp.toLocaleString()} XP</p>
                     {(top3[0] as any).title && <p className="text-[9px] text-[var(--muted)] opacity-60">{(top3[0] as any).title}</p>}
                   </div>
-                  <div className="w-full h-24 rounded-t-lg border-t border-x" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--primary) 30%, transparent)' }} />
+                  <div className="w-full h-24 rounded-t-[28px] border-t border-x" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--primary) 30%, transparent)' }} />
                 </motion.div>
               )}
               {/* 3rd */}
@@ -96,7 +96,7 @@ export const Leaderboard = () => {
                     <p className="text-[12px] font-bold text-[var(--foreground)] truncate max-w-[80px]">{top3[2].name}</p>
                     <p className="text-[11px] text-[var(--muted)]">{top3[2].xp.toLocaleString()} XP</p>
                   </div>
-                  <div className="w-full h-10 rounded-t-lg bg-[var(--input)] border-t border-x border-[var(--border)]" />
+                  <div className="w-full h-10 rounded-t-[22px] bg-[var(--input)] border-t border-x border-[var(--border)]" />
                 </motion.div>
               )}
             </div>
@@ -105,7 +105,7 @@ export const Leaderboard = () => {
 
         {/* My rank (if not in top 3) */}
         {myRank && myRank.rank > 3 && (
-          <div className="bg-[var(--primary)]/8 border border-[var(--primary)]/20 rounded-xl p-3 flex items-center gap-3">
+          <div className="stitch-glass-card rounded-[28px] p-3 flex items-center gap-3">
             <span className="text-sm font-bold text-[var(--primary)] w-8">#{myRank.rank}</span>
             <div className="w-8 h-8 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xs font-black shrink-0">
               {user?.email?.slice(0,2).toUpperCase()}
@@ -119,7 +119,7 @@ export const Leaderboard = () => {
         )}
 
         {/* Full table */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+        <div className="stitch-glass-card rounded-[32px] overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--input)]">
             <div className="col-span-1 text-[11px] font-semibold text-[var(--muted)] uppercase">#</div>
             <div className="col-span-5 text-[11px] font-semibold text-[var(--muted)] uppercase">Student</div>

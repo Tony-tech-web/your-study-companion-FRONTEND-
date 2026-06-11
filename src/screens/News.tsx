@@ -30,13 +30,13 @@ export const News = () => {
   if (loading) return <ListSkeleton rows={5} />;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
-      <div className="max-w-4xl mx-auto p-6 space-y-5">
+    <div className="stitch-page flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
 
         {/* Header */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="stitch-glass-card flex items-center justify-between rounded-[36px] p-5 sm:p-6">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Campus News</h1>
+            <h1 className="text-2xl sm:text-4xl font-black text-[var(--foreground)] tracking-tight">Campus News</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{news.length} article{news.length !== 1 ? 's' : ''} from Elizade University</p>
           </div>
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
@@ -48,7 +48,7 @@ export const News = () => {
         <div className="flex gap-2 overflow-x-auto pb-1">
           {categories.map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
-              className={cn('shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all',
+              className={cn('stitch-neo-button shrink-0 px-4 py-2 rounded-full text-[12px] font-semibold transition-all',
                 activeCategory === cat
                   ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                   : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]')}>
@@ -59,7 +59,7 @@ export const News = () => {
 
         {/* Empty state */}
         {filtered.length === 0 && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-16 text-center">
+          <div className="stitch-glass-card rounded-[32px] p-16 text-center">
             <Tag className="w-8 h-8 text-[var(--muted)] opacity-20 mx-auto mb-2" />
             <p className="text-sm text-[var(--muted)] opacity-40">No articles in this category</p>
           </div>
@@ -69,12 +69,12 @@ export const News = () => {
         {filtered.length > 0 && (
           <motion.div key={filtered[0].id}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="group bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-md transition-all cursor-pointer">
+            className="stitch-glass-card group rounded-[32px] overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-md transition-all cursor-pointer">
             <div className="relative aspect-video overflow-hidden bg-[var(--input)]">
               <img src={filtered[0].image} alt={filtered[0].title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute top-3 left-3">
                 <span className="text-[11px] font-bold text-white bg-[var(--primary)] px-2.5 py-1 rounded-lg">
                   {filtered[0].category}
@@ -102,7 +102,7 @@ export const News = () => {
           {filtered.slice(1).map((item, i) => (
             <motion.div key={item.id}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="group bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-sm transition-all cursor-pointer">
+              className="stitch-glass-card group rounded-[28px] overflow-hidden hover:border-[var(--primary)]/30 hover:shadow-sm transition-all cursor-pointer">
               <div className="relative h-36 overflow-hidden bg-[var(--input)]">
                 <img src={item.image} alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

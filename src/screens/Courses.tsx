@@ -97,17 +97,17 @@ export const Courses = () => {
   const filtered = pdfs.filter(p => !query || p.file_name.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
+    <div className="stitch-page flex-1 overflow-y-auto bg-[var(--background)] text-[var(--foreground)] custom-scrollbar">
       <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-5 pb-28 lg:pb-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="stitch-glass-card flex items-center justify-between rounded-[36px] p-5 sm:p-6">
           <div>
-            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">Course Materials</h1>
+            <h1 className="text-2xl sm:text-4xl font-black text-[var(--foreground)] tracking-tight">Course Materials</h1>
             <p className="text-xs text-[var(--muted)] mt-0.5">{pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''} in your library</p>
           </div>
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
+            className="stitch-neo-button flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}>
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Upload PDF
@@ -135,7 +135,7 @@ export const Courses = () => {
           onDrop={e => { e.preventDefault(); setDragging(false); handleUpload(e.dataTransfer.files); }}
           onClick={() => fileInputRef.current?.click()}
           className={cn(
-            'border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all',
+            'stitch-glass-card border-2 border-dashed rounded-[32px] p-8 flex flex-col items-center justify-center cursor-pointer transition-all',
             dragging ? 'border-[var(--primary)] bg-[var(--primary)]/5' : 'border-[var(--border)] hover:border-[var(--primary)]/40 hover:bg-[var(--accent)]'
           )}>
           <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all',
@@ -153,7 +153,7 @@ export const Courses = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] opacity-40" />
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search PDFs..."
-              className="w-full bg-[var(--card)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
+              className="stitch-neo-inset w-full rounded-full pl-9 pr-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] placeholder:opacity-40 focus:outline-none focus:border-[var(--primary)] transition-all" />
           </div>
         )}
 
@@ -161,7 +161,7 @@ export const Courses = () => {
         {loading ? (
           <ListSkeleton rows={4} />
         ) : filtered.length === 0 ? (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-12 text-center">
+          <div className="stitch-glass-card rounded-[32px] p-12 text-center">
             <BookOpen className="w-10 h-10 text-[var(--muted)] opacity-20 mx-auto mb-3" />
             <p className="text-sm font-medium text-[var(--muted)] opacity-50">
               {query ? 'No PDFs match your search' : 'Your library is empty'}
@@ -169,7 +169,7 @@ export const Courses = () => {
             {!query && <p className="text-xs text-[var(--muted)] opacity-30 mt-1">Upload your first PDF to get started</p>}
           </div>
         ) : (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+          <div className="stitch-glass-card rounded-[32px] overflow-hidden">
             <div className="grid grid-cols-12 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--input)]">
               <div className="col-span-6 text-[11px] font-semibold text-[var(--muted)] uppercase">File</div>
               <div className="col-span-2 text-[11px] font-semibold text-[var(--muted)] uppercase text-center">Size</div>
@@ -209,7 +209,7 @@ export const Courses = () => {
         )}
 
         {/* Info box */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex items-start gap-3">
+        <div className="stitch-glass-card rounded-[28px] p-4 flex items-start gap-3">
           <div className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center shrink-0 mt-0.5">
             <Sparkles className="w-3.5 h-3.5 text-[var(--primary)]" />
           </div>
