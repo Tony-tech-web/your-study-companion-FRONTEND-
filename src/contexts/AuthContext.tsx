@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { setRealtimeAuthFromSession, supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -25,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 1. Immediately check existing session (from cookie/localStorage)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setRealtimeAuthFromSession(session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -32,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 2. Listen for any auth changes (login, logout, token refresh, OAuth callback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setRealtimeAuthFromSession(session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
