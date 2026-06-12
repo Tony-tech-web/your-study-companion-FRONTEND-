@@ -1,10 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, Session } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const setRealtimeAuthFromSession = (session: Session | null) => {
+  if (!session?.access_token) return;
+  try {
+    supabase.realtime.setAuth(session.access_token);
+  } catch (error) {
+    console.warn('Realtime auth sync failed:', error);
+  }
+};
 
 // Call a Supabase Edge Function with the current user's auth token
 export async function callEdgeFunction(
@@ -13,6 +22,7 @@ export async function callEdgeFunction(
   options: { stream?: boolean } = {}
 ): Promise<Response> {
   const { data: { session } } = await supabase.auth.getSession();
+  setRealtimeAuthFromSession(session);
   const token = session?.access_token;
   if (!token) throw new Error('No active session. Please sign in.');
 
