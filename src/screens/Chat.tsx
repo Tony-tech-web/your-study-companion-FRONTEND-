@@ -1,12 +1,12 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Send, Search, MessageSquare, Loader2 } from 'lucide-react';
 import { getChatMessages, sendChatMessage, ChatMessage } from '../services/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { ListSkeleton } from '../components/Skeleton';
-import { supabase } from '../lib/supabase';
+import { setRealtimeAuthFromSession, supabase } from '../lib/supabase';
 
 export const Chat = () => {
   const { user } = useAuth();
@@ -14,17 +14,36 @@ export const Chat = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState<'connecting' | 'live' | 'offline'>('connecting');
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchMessages(); }, []);
+  const fetchMessages = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
+    try {
+      const data = await getChatMessages();
+      setMessages(data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    }
+    catch (err) {
+      console.error('Failed to fetch messages:', err);
+      setStatus('offline');
+    }
+    finally { if (showLoader) setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchMessages(true); }, [fetchMessages]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => {
     if (!user?.id) return;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const isVisibleToUser = (message: ChatMessage) =>
       !message.receiver_id || message.sender_id === user.id || message.receiver_id === user.id;
 
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => setRealtimeAuthFromSession(session))
+      .catch(() => null);
+
     const channel = supabase
-      .channel('orbit-chat-messages')
+      .channel(`orbit-chat-messages:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, payload => {
         const next = payload.new as ChatMessage | null;
         const old = payload.old as Partial<ChatMessage> | null;
@@ -39,18 +58,29 @@ export const Chat = () => {
           return merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         });
       })
-      .subscribe();
+      .subscribe((nextStatus) => {
+        if (nextStatus === 'SUBSCRIBED') {
+          setStatus('live');
+          fetchMessages(false);
+        }
+        if (nextStatus === 'CHANNEL_ERROR' || nextStatus === 'TIMED_OUT' || nextStatus === 'CLOSED') {
+          setStatus('offline');
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(() => fetchMessages(false), 1200);
+        }
+      });
+
+    const fallback = window.setInterval(() => fetchMessages(false), 25000);
+    const onFocus = () => fetchMessages(false);
+    window.addEventListener('focus', onFocus);
 
     return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      window.clearInterval(fallback);
+      window.removeEventListener('focus', onFocus);
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
-
-  const fetchMessages = async () => {
-    try { const data = await getChatMessages(); setMessages(data); }
-    catch (err) { console.error('Failed to fetch messages:', err); }
-    finally { setLoading(false); }
-  };
+  }, [fetchMessages, user?.id]);
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;
@@ -59,7 +89,10 @@ export const Chat = () => {
     setSending(true);
     try {
       const newMsg = await sendChatMessage(content);
-      setMessages(prev => prev.some(msg => msg.id === newMsg.id) ? prev : [...prev, newMsg]);
+      setMessages(prev => {
+        const merged = prev.some(msg => msg.id === newMsg.id) ? prev : [...prev, newMsg];
+        return merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      });
     } catch (err) { console.error(err); }
     finally { setSending(false); }
   };
@@ -86,7 +119,9 @@ export const Chat = () => {
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
           </div>
-          <p className="text-center text-[10px] text-[var(--muted)] opacity-40 mt-4 px-3">Realtime channel active</p>
+          <p className="text-center text-[10px] text-[var(--muted)] opacity-40 mt-4 px-3">
+            {status === 'live' ? 'Realtime channel active' : status === 'offline' ? 'Reconnecting channel' : 'Connecting channel'}
+          </p>
         </div>
       </div>
 
@@ -100,7 +135,9 @@ export const Chat = () => {
               <p className="text-[14px] font-bold text-[var(--foreground)]">Global Study Hub</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-[var(--muted)] font-medium uppercase tracking-wider">Campus channel</span>
+                <span className="text-[10px] text-[var(--muted)] font-medium uppercase tracking-wider">
+                  {status === 'live' ? 'Campus channel' : status === 'offline' ? 'Reconnecting' : 'Connecting'}
+                </span>
               </div>
             </div>
           </div>
